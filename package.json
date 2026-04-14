@@ -1,0 +1,22 @@
+{
+  "name": "health-fitness-monorepo",
+  "private": true,
+  "workspaces": [
+    "mobile",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @health-fitness/shared",
+    "dev:backend": "npm run dev -w backend",
+    "dev:mobile": "npm run start -w mobile",
+    "test:backend": "npm run test -w backend"
+  },
+  "overrides": {
+    "react-native-safe-area-context": "5.6.2",
+    "react-native-screens": "4.16.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
