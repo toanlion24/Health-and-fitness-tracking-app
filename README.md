@@ -1,6 +1,6 @@
 # Health Fitness Monorepo
 
-Phase 0 scaffold: React Native (Expo) + Express (TypeScript) + MySQL (Prisma) + shared types.
+Current scope: Phase 0 (auth, profile) + Phase 1 (workouts, nutrition, body metrics).
 
 ## Structure
 
@@ -13,6 +13,42 @@ Phase 0 scaffold: React Native (Expo) + Express (TypeScript) + MySQL (Prisma) + 
 
 - Node.js 20+
 - MySQL 8 (local install or Docker)
+
+## Tech Stack Versions
+
+This section lists the versions currently used in this repository so everyone can align local setup quickly.
+
+### Runtime and workspace
+
+- Node.js: `>=20` (from root `engines`)
+- npm workspaces: `mobile`, `backend`, `shared`
+- Docker Compose: used to run MySQL locally (`docker compose up -d mysql`)
+
+### Backend (`backend/`)
+
+- TypeScript: `~5.9.2`
+- Express: `^4.21.2`
+- Prisma ORM and Client: `^6.19.0`
+- MySQL: `8.x` (from local install or Docker image in `docker-compose.yml`)
+- Validation: Zod `^3.24.2`
+- Auth: jsonwebtoken `^9.0.2`, bcrypt `^5.1.1`
+- Logger: pino `^9.6.0`
+- Test: Vitest `^3.0.2`, Supertest `^7.0.0`
+
+### Mobile (`mobile/`)
+
+- Expo SDK: `~54.0.33`
+- React: `19.1.0`
+- React Native: `0.81.5`
+- React Navigation: `@react-navigation/native ^7.2.2`, `@react-navigation/stack ^7.4.10`
+- State management: Zustand `^5.0.12`
+- Secure token storage: `expo-secure-store ~15.0.8`
+- Web support: `react-dom 19.1.0`, `react-native-web ^0.21.0`
+
+### Shared package (`shared/`)
+
+- Package: `@health-fitness/shared` (workspace package)
+- TypeScript: `~5.9.2`
 
 ## Database (Docker)
 
