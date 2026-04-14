@@ -92,3 +92,111 @@ export type PutGoalsBodyDto = {
   targetDate?: string | null;
   isActive?: boolean;
 };
+
+/** Phase 1 — workouts */
+export type ExerciseDto = {
+  id: number;
+  name: string;
+  muscleGroup: string | null;
+  equipment: string | null;
+  met: string | null;
+};
+
+export type WorkoutPlanExerciseDto = {
+  id: number;
+  planId: number;
+  exercise: ExerciseDto;
+  sortOrder: number;
+  targetSets: number | null;
+  targetReps: number | null;
+  targetWeightKg: string | null;
+  restSec: number | null;
+};
+
+export type WorkoutPlanSummaryDto = {
+  id: number;
+  userId: number;
+  name: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type WorkoutPlanDetailDto = WorkoutPlanSummaryDto & {
+  exercises: WorkoutPlanExerciseDto[];
+};
+
+export type WorkoutSessionSetDto = {
+  id: number;
+  sessionId: number;
+  exercise: ExerciseDto;
+  setIndex: number;
+  actualReps: number | null;
+  actualWeightKg: string | null;
+  actualDurationSec: number | null;
+  rpe: number | null;
+  createdAt: string;
+};
+
+export type WorkoutSessionSummaryDto = {
+  id: number;
+  userId: number;
+  planId: number | null;
+  sessionDate: string;
+  startedAt: string;
+  endedAt: string | null;
+  status: string;
+  notes: string | null;
+  createdAt: string;
+};
+
+export type WorkoutSessionDetailDto = WorkoutSessionSummaryDto & {
+  sets: WorkoutSessionSetDto[];
+};
+
+/** Phase 1 — nutrition */
+export type FoodDto = {
+  id: number;
+  userId: number | null;
+  name: string;
+  kcalPerServing: number;
+  proteinG: string;
+  carbG: string;
+  fatG: string;
+  servingUnit: string | null;
+};
+
+export type MealLogItemDto = {
+  id: number;
+  mealLogId: number;
+  foodId: number | null;
+  customFoodName: string | null;
+  quantity: string;
+  unit: string | null;
+  kcal: number;
+  proteinG: string;
+  carbG: string;
+  fatG: string;
+};
+
+export type MealLogDto = {
+  id: number;
+  userId: number;
+  mealType: string;
+  loggedAt: string;
+  notes: string | null;
+  createdAt: string;
+  items: MealLogItemDto[];
+};
+
+/** Phase 1 — body metrics */
+export type BodyMetricLogDto = {
+  id: number;
+  userId: number;
+  recordedAt: string;
+  weightKg: string | null;
+  bodyFatPct: string | null;
+  waistCm: string | null;
+  notes: string | null;
+  createdAt: string;
+};

@@ -1,12 +1,13 @@
 import { defineConfig } from "vitest/config";
 
+/**
+ * DB integration tests (`RUN_INTEGRATION=1`). Use `npm run test:integration`.
+ */
 export default defineConfig({
   test: {
     environment: "node",
     globals: false,
-    include: ["src/**/*.test.ts"],
-    /** Run via `npm run test:integration` (see package.json). */
-    exclude: ["src/**/*.integration.test.ts"],
+    include: ["src/**/*.integration.test.ts"],
     setupFiles: ["src/test-env.ts"],
   },
 });

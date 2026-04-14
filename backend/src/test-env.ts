@@ -1,5 +1,7 @@
 /**
  * Vitest setup: ensure required env exists before importing app modules.
+ * Override `DATABASE_URL` in the shell when pointing at a dedicated test DB.
+ * Integration tests (`RUN_INTEGRATION=1`) expect a migrated schema + seed data.
  */
 process.env.NODE_ENV ??= "test";
 process.env.DATABASE_URL ??=

@@ -12,3 +12,15 @@ export function validateBody<T>(schema: ZodSchema<T>) {
     next();
   };
 }
+
+export function validateQuery<T>(schema: ZodSchema<T>) {
+  return (req: Request, _res: Response, next: NextFunction): void => {
+    const parsed = schema.safeParse(req.query);
+    if (!parsed.success) {
+      next(parsed.error);
+      return;
+    }
+    req.query = parsed.data as unknown as Request["query"];
+    next();
+  };
+}

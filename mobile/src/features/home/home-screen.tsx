@@ -3,8 +3,41 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import { useAuthStore } from "../../core/store/auth-store";
 import type { AppStackParamList } from "../../core/navigation/types";
 import { EmptyState } from "../../core/ui-states/empty-state";
+import { ScreenScroll } from "../../core/ui/screen-scaffold";
+import { appTheme } from "../../core/theme/app-theme";
 
 type Props = StackScreenProps<AppStackParamList, "Home">;
+
+const MENU = [
+  {
+    title: "Hồ sơ & mục tiêu",
+    subtitle: "Cập nhật thông tin cá nhân",
+    to: "Profile" as const,
+    params: undefined,
+    emoji: "👤",
+  },
+  {
+    title: "Tập luyện",
+    subtitle: "Danh mục bài tập, buổi tập",
+    to: "Workouts" as const,
+    params: undefined,
+    emoji: "🏋️",
+  },
+  {
+    title: "Dinh dưỡng",
+    subtitle: "Nhật ký bữa ăn theo ngày",
+    to: "Nutrition" as const,
+    params: undefined,
+    emoji: "🍽️",
+  },
+  {
+    title: "Chỉ số cơ thể",
+    subtitle: "Cân nặng, chỉ số theo thời gian",
+    to: "BodyMetrics" as const,
+    params: undefined,
+    emoji: "📊",
+  },
+];
 
 export function HomeScreen({ navigation }: Props) {
   const user = useAuthStore((s) => s.user);
@@ -20,58 +53,101 @@ export function HomeScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome</Text>
-      <Text style={styles.subtitle}>{user.email}</Text>
+    <ScreenScroll>
+      <Text style={styles.greeting}>Xin chào</Text>
+      <Text style={styles.email}>{user.email}</Text>
+      <Text style={styles.hint}>Chọn chức năng để ghi nhận dữ liệu hằng ngày.</Text>
+
+      <View style={styles.grid}>
+        {MENU.map((item) => (
+          <Pressable
+            key={item.to}
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+            ]}
+            onPress={() =>
+              navigation.navigate(item.to, item.params as never)
+            }
+          >
+            <Text style={styles.emoji}>{item.emoji}</Text>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <Text style={styles.cardSub}>{item.subtitle}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Pressable
-        style={styles.secondary}
-        onPress={() => navigation.navigate("Profile")}
+        style={({ pressed }) => [styles.logout, pressed && styles.logoutPressed]}
+        onPress={() => void logout()}
       >
-        <Text style={styles.secondaryText}>Hồ sơ & mục tiêu</Text>
+        <Text style={styles.logoutText}>Đăng xuất</Text>
       </Pressable>
-
-      <Pressable style={styles.button} onPress={() => void logout()}>
-        <Text style={styles.buttonText}>Đăng xuất</Text>
-      </Pressable>
-    </View>
+    </ScreenScroll>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    justifyContent: "center",
-  },
-  title: {
+  greeting: {
     fontSize: 28,
+    fontWeight: "800",
+    color: appTheme.colors.text,
+  },
+  email: {
+    marginTop: 4,
+    fontSize: 15,
+    color: appTheme.colors.textMuted,
+  },
+  hint: {
+    marginTop: appTheme.space.md,
+    fontSize: 14,
+    lineHeight: 20,
+    color: appTheme.colors.textSoft,
+  },
+  grid: {
+    marginTop: appTheme.space.lg,
+    gap: appTheme.space.sm,
+  },
+  card: {
+    backgroundColor: appTheme.colors.surface,
+    borderRadius: appTheme.radius.lg,
+    padding: appTheme.space.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: appTheme.colors.border,
+    ...appTheme.shadow.card,
+  },
+  cardPressed: {
+    opacity: 0.92,
+  },
+  emoji: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  cardTitle: {
+    fontSize: 17,
     fontWeight: "700",
+    color: appTheme.colors.text,
   },
-  subtitle: {
-    marginTop: 8,
-    fontSize: 16,
-    opacity: 0.75,
+  cardSub: {
+    marginTop: 4,
+    fontSize: 13,
+    color: appTheme.colors.textMuted,
+    lineHeight: 18,
   },
-  secondary: {
-    marginTop: 16,
+  logout: {
+    marginTop: appTheme.space.xl,
     alignSelf: "flex-start",
-  },
-  secondaryText: {
-    color: "#2563eb",
-    fontWeight: "700",
-    fontSize: 16,
-  },
-  button: {
-    marginTop: 16,
-    alignSelf: "flex-start",
-    backgroundColor: "#111827",
-    paddingHorizontal: 16,
+    backgroundColor: appTheme.colors.text,
+    paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: appTheme.radius.md,
   },
-  buttonText: {
+  logoutPressed: {
+    opacity: 0.92,
+  },
+  logoutText: {
     color: "#ffffff",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: 15,
   },
 });

@@ -5,7 +5,10 @@ import { getLogger } from "./shared/logger.js";
 import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { errorHandlerMiddleware } from "./shared/middleware/error-handler.js";
 import { createAuthRouter } from "./modules/auth/auth.routes.js";
+import { createBodyMetricsRouter } from "./modules/body-metrics/body-metrics.routes.js";
+import { createNutritionRouter } from "./modules/nutrition/nutrition.routes.js";
 import { createUsersRouter } from "./modules/users/users.routes.js";
+import { createWorkoutsRouter } from "./modules/workouts/workouts.routes.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -44,6 +47,9 @@ export function createApp(): express.Express {
 
   app.use("/api/v1/auth", createAuthRouter());
   app.use("/api/v1", createUsersRouter());
+  app.use("/api/v1", createWorkoutsRouter());
+  app.use("/api/v1", createNutritionRouter());
+  app.use("/api/v1", createBodyMetricsRouter());
 
   app.use(errorHandlerMiddleware);
   return app;

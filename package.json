@@ -10,7 +10,13 @@
     "build:shared": "npm run build -w @health-fitness/shared",
     "dev:backend": "npm run dev -w backend",
     "dev:mobile": "npm run start -w mobile",
-    "test:backend": "npm run test -w backend"
+    "dev:all": "concurrently -n api,expo -c cyan,magenta \"npm run dev:backend\" \"npm run dev:mobile\"",
+    "docker:mysql": "docker compose up -d mysql",
+    "setup:dev": "npm run build:shared && node scripts/ensure-backend-env.mjs && node scripts/ensure-mobile-env.mjs && npm run db:prepare -w backend",
+    "quickstart": "npm run docker:mysql && npm run setup:dev && npm run dev:all",
+    "quickstart:app": "npm run setup:dev && npm run dev:all",
+    "test:backend": "npm run test -w backend",
+    "db:seed": "npm run db:seed -w backend"
   },
   "overrides": {
     "react-native-safe-area-context": "5.6.2",
@@ -18,5 +24,8 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

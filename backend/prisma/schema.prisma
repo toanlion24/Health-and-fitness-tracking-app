@@ -12,6 +12,18 @@ enum UserStatus {
   locked
 }
 
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum WorkoutSessionStatus {
+  in_progress
+  completed
+}
+
 model User {
   id           Int        @id @default(autoincrement())
   email        String     @unique @db.VarChar(255)
@@ -20,11 +32,178 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  profile       UserProfile?
-  goals         UserGoal[]
-  refreshTokens RefreshToken[]
+  profile          UserProfile?
+  goals            UserGoal[]
+  refreshTokens    RefreshToken[]
+  workoutPlans     WorkoutPlan[]
+  workoutSessions  WorkoutSession[]
+  mealLogs         MealLog[]
+  bodyMetricLogs   BodyMetricLog[]
+  customFoods      FoodCatalog[]
 
   @@map("users")
+}
+
+model ExerciseCatalog {
+  id          Int     @id @default(autoincrement())
+  name        String  @db.VarChar(255)
+  muscleGroup String? @map("muscle_group") @db.VarChar(128)
+  equipment   String? @db.VarChar(128)
+  met         Decimal? @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  planExercises WorkoutPlanExercise[]
+  sessionSets   WorkoutSessionSet[]
+
+  @@map("exercise_catalog")
+}
+
+model WorkoutPlan {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @map("user_id")
+  name        String  @db.VarChar(255)
+  description String? @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutPlanExercise[]
+  sessions  WorkoutSession[]
+
+  @@index([userId])
+  @@map("workout_plans")
+}
+
+model WorkoutPlanExercise {
+  id             Int      @id @default(autoincrement())
+  planId         Int      @map("plan_id")
+  exerciseId     Int      @map("exercise_id")
+  sortOrder      Int      @map("sort_order")
+  targetSets     Int?     @map("target_sets")
+  targetReps     Int?     @map("target_reps")
+  targetWeightKg Decimal? @map("target_weight_kg") @db.Decimal(8, 2)
+  restSec        Int?     @map("rest_sec")
+
+  plan     WorkoutPlan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  exercise ExerciseCatalog @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([planId])
+  @@map("workout_plan_exercises")
+}
+
+model WorkoutSession {
+  id          Int                  @id @default(autoincrement())
+  userId      Int                  @map("user_id")
+  planId      Int?                 @map("plan_id")
+  sessionDate DateTime             @map("session_date") @db.Date
+  startedAt   DateTime             @map("started_at")
+  endedAt     DateTime?            @map("ended_at")
+  status      WorkoutSessionStatus @default(in_progress)
+  notes       String?              @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan  WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  sets  WorkoutSessionSet[]
+
+  @@index([userId, sessionDate])
+  @@map("workout_sessions")
+}
+
+model WorkoutSessionSet {
+  id                Int      @id @default(autoincrement())
+  sessionId         Int      @map("session_id")
+  exerciseId        Int      @map("exercise_id")
+  setIndex          Int      @map("set_index")
+  actualReps        Int?     @map("actual_reps")
+  actualWeightKg    Decimal? @map("actual_weight_kg") @db.Decimal(8, 2)
+  actualDurationSec Int?     @map("actual_duration_sec")
+  rpe               Int?
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session  WorkoutSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise ExerciseCatalog @relation(fields: [exerciseId], references: [id], onDelete: Restrict)
+
+  @@index([sessionId])
+  @@map("workout_session_sets")
+}
+
+model FoodCatalog {
+  id             Int     @id @default(autoincrement())
+  userId         Int?    @map("user_id")
+  name           String  @db.VarChar(255)
+  kcalPerServing Int     @map("kcal_per_serving")
+  proteinG       Decimal @map("protein_g") @db.Decimal(8, 2)
+  carbG          Decimal @map("carb_g") @db.Decimal(8, 2)
+  fatG           Decimal @map("fat_g") @db.Decimal(8, 2)
+  servingUnit    String? @map("serving_unit") @db.VarChar(64)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems MealLogItem[]
+
+  @@index([userId])
+  @@index([name])
+  @@map("food_catalog")
+}
+
+model MealLog {
+  id       Int      @id @default(autoincrement())
+  userId   Int      @map("user_id")
+  mealType MealType @map("meal_type")
+  loggedAt DateTime @map("logged_at")
+  notes    String?  @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealLogItem[]
+
+  @@index([userId, loggedAt])
+  @@map("meal_logs")
+}
+
+model MealLogItem {
+  id             Int     @id @default(autoincrement())
+  mealLogId      Int     @map("meal_log_id")
+  foodId         Int?    @map("food_id")
+  customFoodName String? @map("custom_food_name") @db.VarChar(255)
+  quantity       Decimal @db.Decimal(10, 3)
+  unit           String? @db.VarChar(64)
+  kcal           Int
+  proteinG       Decimal @map("protein_g") @db.Decimal(8, 2)
+  carbG          Decimal @map("carb_g") @db.Decimal(8, 2)
+  fatG           Decimal @map("fat_g") @db.Decimal(8, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  mealLog MealLog      @relation(fields: [mealLogId], references: [id], onDelete: Cascade)
+  food    FoodCatalog? @relation(fields: [foodId], references: [id], onDelete: SetNull)
+
+  @@index([mealLogId])
+  @@map("meal_log_items")
+}
+
+model BodyMetricLog {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @map("user_id")
+  recordedAt DateTime @map("recorded_at")
+  weightKg   Decimal? @map("weight_kg") @db.Decimal(6, 2)
+  bodyFatPct Decimal? @map("body_fat_pct") @db.Decimal(5, 2)
+  waistCm    Decimal? @map("waist_cm") @db.Decimal(6, 2)
+  notes      String?  @db.VarChar(512)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, recordedAt])
+  @@map("body_metric_logs")
 }
 
 model UserProfile {

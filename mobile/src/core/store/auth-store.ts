@@ -6,8 +6,19 @@ import type {
   RegisterResponseDto,
 } from "@health-fitness/shared";
 import { bindAuthSessionHandlers } from "../api/auth-bridge";
-import { apiFetch } from "../api/client";
+import { apiFetch, isApiErrorBody } from "../api/client";
+import { ApiClientError } from "../api/api-error";
 import { getTokens, saveTokens, clearTokens } from "../storage/secure-store";
+
+function formatAuthError(err: unknown): string {
+  if (err instanceof ApiClientError && isApiErrorBody(err.body)) {
+    return err.body.message;
+  }
+  if (err instanceof Error) {
+    return err.message;
+  }
+  return "Request failed";
+}
 
 export type AuthState = {
   user: AuthUserDto | null;
@@ -66,10 +77,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: res.tokens.accessToken,
         refreshToken: res.tokens.refreshToken,
         status: "ready",
+        errorMessage: null,
       });
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Registration failed";
+      const message = formatAuthError(err);
       set({ status: "error", errorMessage: message });
       throw err;
     }
@@ -88,9 +99,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         accessToken: res.tokens.accessToken,
         refreshToken: res.tokens.refreshToken,
         status: "ready",
+        errorMessage: null,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Login failed";
+      const message = formatAuthError(err);
       set({ status: "error", errorMessage: message });
       throw err;
     }

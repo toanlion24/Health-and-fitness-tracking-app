@@ -17,6 +17,20 @@ function buildUrl(path: string): string {
   return `${apiBaseUrl}${path.startsWith("/") ? "" : "/"}${path}`;
 }
 
+/** When fetch() fails before any HTTP response (offline, wrong host, blocked cleartext). */
+function networkFailureMessage(): ApiErrorBody {
+  return {
+    code: "NETWORK_ERROR",
+    message:
+      `Không kết nối được máy chủ API (${apiBaseUrl}). ` +
+      `Kiểm tra: (1) Backend đã chạy chưa (npm run dev:backend). ` +
+      `(2) Điện thoại thật: đặt EXPO_PUBLIC_API_URL = http://<IP-LAN-máy-tính>:3000, không dùng 127.0.0.1. ` +
+      `(3) Android emulator: dùng http://10.0.2.2:3000. ` +
+      `Sau khi sửa .env, cần khởi động lại Expo (clear cache: npx expo start -c).`,
+    requestId: "client",
+  };
+}
+
 async function parseJsonResponse(res: Response): Promise<unknown> {
   const text = await res.text();
   if (text.length === 0) {
@@ -91,12 +105,21 @@ export async function apiFetch<T>(
     });
   }
 
-  let res = await exec(token ?? null);
+  let res: Response;
+  try {
+    res = await exec(token ?? null);
+  } catch {
+    throw new ApiClientError(0, networkFailureMessage());
+  }
   let body = await parseJsonResponse(res);
 
   if (res.status === 401 && useSession && (await tryRefreshSessionOnce())) {
     const nextToken = getAuthSessionHandlers()?.getAccessToken() ?? null;
-    res = await exec(nextToken);
+    try {
+      res = await exec(nextToken);
+    } catch {
+      throw new ApiClientError(0, networkFailureMessage());
+    }
     body = await parseJsonResponse(res);
   }
 

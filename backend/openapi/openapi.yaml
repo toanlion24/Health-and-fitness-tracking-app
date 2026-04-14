@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Health Fitness API
-  version: 0.1.0
+  version: 0.2.0
 servers:
   - url: http://localhost:3000
 paths:
@@ -194,6 +194,202 @@ paths:
           description: Validation error
         "401":
           description: Unauthorized
+  /api/v1/exercises:
+    get:
+      summary: List exercise catalog (Phase 1)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: muscleGroup
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+        - in: query
+          name: offset
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Array of exercises
+        "401":
+          description: Unauthorized
+  /api/v1/workout-plans:
+    get:
+      summary: List workout plans
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: include
+          schema:
+            type: string
+            enum: [exercises]
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create workout plan
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Created
+  /api/v1/workout-sessions:
+    get:
+      summary: List workout sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          schema:
+            type: string
+            example: "2026-04-01"
+        - in: query
+          name: to
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create workout session
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sessionDate]
+              properties:
+                planId:
+                  type: integer
+                  nullable: true
+                sessionDate:
+                  type: string
+                  example: "2026-04-14"
+                notes:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Created
+  /api/v1/foods:
+    get:
+      summary: Search food catalog
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+        - in: query
+          name: limit
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+  /api/v1/meal-logs:
+    get:
+      summary: Meal logs for a calendar day (UTC)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: date
+          required: true
+          schema:
+            type: string
+            example: "2026-04-14"
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create meal log
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealType, loggedAt]
+              properties:
+                mealType:
+                  type: string
+                  enum: [breakfast, lunch, dinner, snack]
+                loggedAt:
+                  type: string
+                  format: date-time
+      responses:
+        "201":
+          description: Created
+  /api/v1/body-metrics:
+    get:
+      summary: List body metric entries in date range
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create body metric log
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recordedAt]
+              properties:
+                recordedAt:
+                  type: string
+                  format: date-time
+                weightKg:
+                  type: number
+                  nullable: true
+      responses:
+        "201":
+          description: Created
 components:
   securitySchemes:
     bearerAuth:
