@@ -200,3 +200,35 @@ export type BodyMetricLogDto = {
   notes: string | null;
   createdAt: string;
 };
+
+/** Phase 2 — progress + reminders */
+export type DailyProgressDto = {
+  id: number;
+  userId: number;
+  date: string;
+  totalKcalIn: number;
+  totalKcalOut: number;
+  totalWorkoutMinutes: number;
+  proteinG: string;
+  carbG: string;
+  fatG: string;
+  goalScore: number | null;
+  updatedAt: string;
+};
+
+export type ReminderDto = {
+  id: number;
+  userId: number;
+  type: string;
+  title: string;
+  message: string | null;
+  cronExpr: string | null;
+  timezone: string;
+  localHour: number;
+  localMinute: number;
+  isEnabled: boolean;
+  nextTriggerAt: string | null;
+  lastTriggeredAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};

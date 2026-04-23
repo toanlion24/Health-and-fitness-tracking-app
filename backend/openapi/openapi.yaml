@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Health Fitness API
-  version: 0.2.0
+  version: 0.3.0
 servers:
   - url: http://localhost:3000
 paths:
@@ -390,6 +390,119 @@ paths:
       responses:
         "201":
           description: Created
+  /api/v1/progress/daily:
+    get:
+      summary: List daily progress aggregates (recomputes rows for the range)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: from
+          required: true
+          schema:
+            type: string
+            example: "2026-04-01"
+        - in: query
+          name: to
+          required: true
+          schema:
+            type: string
+            example: "2026-04-30"
+      responses:
+        "200":
+          description: OK
+  /api/v1/reminders:
+    get:
+      summary: List reminders
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+    post:
+      summary: Create reminder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, title, timezone, localHour, localMinute]
+              properties:
+                type:
+                  type: string
+                  enum: [workout, water, meal, sleep]
+                title:
+                  type: string
+                message:
+                  type: string
+                  nullable: true
+                timezone:
+                  type: string
+                localHour:
+                  type: integer
+                localMinute:
+                  type: integer
+                isEnabled:
+                  type: boolean
+      responses:
+        "201":
+          description: Created
+  /api/v1/reminders/{id}:
+    patch:
+      summary: Update reminder
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+    delete:
+      summary: Delete reminder
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: No content
+  /api/v1/me/device-tokens:
+    post:
+      summary: Register Expo push token for the signed-in user
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [expoPushToken, platform]
+              properties:
+                expoPushToken:
+                  type: string
+                platform:
+                  type: string
+                  enum: [ios, android, web]
+      responses:
+        "200":
+          description: OK
 components:
   securitySchemes:
     bearerAuth:

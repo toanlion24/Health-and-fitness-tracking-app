@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "worker:reminders": "tsx src/worker/reminder-worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "test": "vitest run",
@@ -25,9 +26,11 @@
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
+    "expo-server-sdk": "^6.1.0",
     "express": "^4.21.2",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "luxon": "^3.7.2",
     "pino": "^9.6.0",
     "uuid": "^11.0.5",
     "zod": "^3.24.2"
@@ -37,6 +40,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.9",
+    "@types/luxon": "^3.7.1",
     "@types/node": "^22.13.10",
     "@types/supertest": "^6.0.2",
     "@types/uuid": "^10.0.0",

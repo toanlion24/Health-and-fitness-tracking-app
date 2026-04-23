@@ -4,7 +4,11 @@ import type { MeResponseDto } from "@health-fitness/shared";
 import { prisma } from "../../shared/db/prisma.js";
 import { AppError } from "../../shared/errors/app-error.js";
 import { serializeGoal, serializeProfile } from "./users.serializer.js";
-import type { PutGoalsBody, UpdateProfileBody } from "./users.dto.js";
+import type {
+  PutGoalsBody,
+  RegisterDeviceTokenBody,
+  UpdateProfileBody,
+} from "./users.dto.js";
 
 export async function getMe(userId: number): Promise<MeResponseDto> {
   const user = await prisma.user.findUnique({
@@ -116,4 +120,25 @@ export async function putGoals(
   });
 
   return getMe(userId);
+}
+
+export async function registerDeviceToken(
+  userId: number,
+  body: RegisterDeviceTokenBody,
+): Promise<{ ok: true }> {
+  await prisma.deviceToken.upsert({
+    where: { expoPushToken: body.expoPushToken },
+    create: {
+      userId,
+      expoPushToken: body.expoPushToken,
+      platform: body.platform,
+      isActive: true,
+    },
+    update: {
+      userId,
+      platform: body.platform,
+      isActive: true,
+    },
+  });
+  return { ok: true };
 }

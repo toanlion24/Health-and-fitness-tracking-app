@@ -1,17 +1,20 @@
 /**
- * Shared visual tokens for Phase 1 screens (aligned with existing grays + blue accent).
+ * Shared visual tokens — Phase 2 home/dashboard aligned with gui2.pen (orange accent, soft gray canvas).
  */
 export const appTheme = {
   colors: {
-    bg: "#f1f5f9",
+    bg: "#fafafa",
     surface: "#ffffff",
-    text: "#0f172a",
+    surfaceMuted: "#f3f3f4",
+    text: "#111214",
     textMuted: "#64748b",
     textSoft: "#94a3b8",
-    border: "#e2e8f0",
+    border: "#e8e8e8",
     borderStrong: "#cbd5e1",
     primary: "#2563eb",
     primaryPressed: "#1d4ed8",
+    accent: "#f97316",
+    accentSoft: "#ff9c58",
     danger: "#b91c1c",
     success: "#15803d",
   },

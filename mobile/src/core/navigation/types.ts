@@ -1,6 +1,10 @@
 export type AuthStackParamList = {
+  Splash: undefined;
+  Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ResetPassword: { email?: string } | undefined;
+  PasswordSent: { email: string };
 };
 
 export type AppStackParamList = {
@@ -10,4 +14,5 @@ export type AppStackParamList = {
   WorkoutSession: { sessionId: string };
   Nutrition: { date?: string } | undefined;
   BodyMetrics: undefined;
+  Reminders: undefined;
 };

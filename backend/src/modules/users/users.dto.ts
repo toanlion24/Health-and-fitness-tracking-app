@@ -34,5 +34,13 @@ export const putGoalsBodySchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+export const registerDeviceTokenBodySchema = z.object({
+  expoPushToken: z.string().min(10).max(512),
+  platform: z.enum(["ios", "android", "web"]),
+});
+
 export type UpdateProfileBody = z.infer<typeof updateProfileBodySchema>;
 export type PutGoalsBody = z.infer<typeof putGoalsBodySchema>;
+export type RegisterDeviceTokenBody = z.infer<
+  typeof registerDeviceTokenBodySchema
+>;

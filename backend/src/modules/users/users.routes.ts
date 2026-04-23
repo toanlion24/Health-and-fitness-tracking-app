@@ -4,6 +4,7 @@ import { validateBody } from "../../shared/middleware/validate.js";
 import * as usersController from "./users.controller.js";
 import {
   putGoalsBodySchema,
+  registerDeviceTokenBodySchema,
   updateProfileBodySchema,
 } from "./users.dto.js";
 
@@ -21,6 +22,12 @@ export function createUsersRouter(): Router {
     requireAuth,
     validateBody(putGoalsBodySchema),
     usersController.putGoals,
+  );
+  router.post(
+    "/me/device-tokens",
+    requireAuth,
+    validateBody(registerDeviceTokenBodySchema),
+    usersController.postDeviceToken,
   );
   return router;
 }
