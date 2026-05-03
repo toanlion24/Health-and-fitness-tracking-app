@@ -1,34 +1,29 @@
-import { useEffect } from "react";
-import { StatusBar } from "expo-status-bar";
+import type { ReactElement } from "react";
+import { useTranslation } from "react-i18next";
+import { ActivityIndicator, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { AppNavigator } from "./src/core/navigation/app-navigator";
-import { registerExpoPushAndSync } from "./src/core/push/register-expo-push";
-import { useAuthStore } from "./src/core/store/auth-store";
-import { LoadingState } from "./src/core/ui-states/loading-state";
+import { Module01Navigator } from "./src/core/navigation/module01-navigator";
+import { useModule01Fonts } from "./src/features/module01/theme/fonts";
 
-export default function App() {
-  const hydrate = useAuthStore((s) => s.hydrate);
-  const status = useAuthStore((s) => s.status);
-  const user = useAuthStore((s) => s.user);
-
-  useEffect(() => {
-    void hydrate();
-  }, [hydrate]);
-
-  useEffect(() => {
-    if (user) {
-      void registerExpoPushAndSync();
-    }
-  }, [user]);
-
+export default function App(): ReactElement {
+  const { t } = useTranslation();
+  const fontsLoaded = useModule01Fonts();
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAFC" }}>
+        <ActivityIndicator accessibilityLabel={t("a11y.loadingFonts")} />
+      </View>
+    );
+  }
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      {status === "loading" ? (
-        <LoadingState message="Starting..." />
-      ) : (
-        <AppNavigator />
-      )}
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Module01Navigator />
+        </NavigationContainer>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

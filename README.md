@@ -96,7 +96,8 @@ See `backend/openapi/openapi.yaml`.
 
 ## Additional docs
 
-- Run guide: `docs/run-project-guide.md`
+- **Chức năng & cài đặt (tiếng Việt):** [`docs/CHUC_NANG_VA_CAI_DAT.md`](docs/CHUC_NANG_VA_CAI_DAT.md)
+- Run guide: [`docs/run-project-guide.md`](docs/run-project-guide.md)
 
 ## Result Images
 
