@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "health-app",
+    "slug": "health-app",
+    "version": "1.0.0",
+    "sdkVersion": "55.0.0",
+    "entryPoint": "./index.js",
+    "platforms": ["ios", "android", "web"],
+    "plugins": [
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow health-app to access your device motion to track your steps."
+        }
+      ]
+    ],
+    "android": {
+      "permissions": ["ACTIVITY_RECOGNITION"]
+    }
+  }
+}
