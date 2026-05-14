@@ -1,6 +1,6 @@
 # Health Fitness Monorepo
 
-Current scope: Phase 0 (auth, profile) + Phase 1 (workouts, nutrition, body metrics).
+Mobile: auth and onboarding, then main tabs (Home, Workout, Nutrition, Progress, Profile) with feature stacks wired in `mobile/src/core/navigation`. Backend covers workouts, nutrition, body metrics, progress, reminders, and auth under `/api/v1`. For a maintained list of screens and files, see [`docs/file-links-and-functions.md`](docs/file-links-and-functions.md).
 
 ## Structure
 
@@ -86,22 +86,30 @@ On Android emulator, `127.0.0.1` points to the emulator itself. Use `10.0.2.2` (
 ## Scripts
 
 - `npm run build:shared` — build shared package
+- `npm run lint` — run lint for backend/mobile/shared
+- `npm run typecheck` — run TypeScript checks for all workspaces
+- `npm run format:check` — check formatting with Prettier
 - `npm run dev:backend` — start API in watch mode
 - `npm run dev:mobile` — start Expo
 - `npm run test:backend` — run backend tests
+
+Pre-commit hook is enabled with Husky + lint-staged:
+
+- staged files are formatted by Prettier
+- TypeScript source in `backend/src`, `mobile/src`, `shared/src` is linted before commit
 
 ## API docs
 
 See `backend/openapi/openapi.yaml`.
 
+## DB migration v1
+
+Baseline migration notes and commands:
+
+- `backend/prisma/MIGRATION_V1.md`
+
 ## Additional docs
 
 - **Chức năng & cài đặt (tiếng Việt):** [`docs/CHUC_NANG_VA_CAI_DAT.md`](docs/CHUC_NANG_VA_CAI_DAT.md)
 - Run guide: [`docs/run-project-guide.md`](docs/run-project-guide.md)
-
-## Result Images
-
-Two screenshots used for report:
-
-![Result 1](image%20of%20results/z7724339420780_508df6150f285cde013626a4f369c707.jpg)
-![Result 2](image%20of%20results/z7724339424752_6338ad113c96a3821c847349d326bafc.jpg)
+- Screen and file map: [`docs/file-links-and-functions.md`](docs/file-links-and-functions.md)
