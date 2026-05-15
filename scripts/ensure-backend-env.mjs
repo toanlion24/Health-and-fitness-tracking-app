@@ -1,6 +1,5 @@
 /**
  * Create backend/.env from .env.example if .env is missing.
- * Does not overwrite an existing .env.
  */
 import fs from "node:fs";
 import path from "node:path";
