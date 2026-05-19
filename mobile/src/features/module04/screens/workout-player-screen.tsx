@@ -8,7 +8,10 @@ import { StatusBar } from "expo-status-bar";
 import { colors, touch } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
 import { getExerciseById } from "../data/exercises";
-import type { WorkoutPlayerPhase, WorkoutStackScreenProps } from "../navigation/workout-stack-types";
+import type {
+  WorkoutPlayerPhase,
+  WorkoutStackScreenProps,
+} from "../navigation/workout-stack-types";
 
 const BG: Record<WorkoutPlayerPhase, [string, string]> = {
   active: ["#0F172A", "#0B3D4A"],
@@ -16,7 +19,10 @@ const BG: Record<WorkoutPlayerPhase, [string, string]> = {
   completed: ["#101826", "#0F3D54"],
 };
 
-export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenProps<"WorkoutPlayer">): ReactElement {
+export function WorkoutPlayerScreen({
+  navigation,
+  route,
+}: WorkoutStackScreenProps<"WorkoutPlayer">): ReactElement {
   const exercise = getExerciseById(route.params.exerciseId);
   const [phase, setPhase] = useState<WorkoutPlayerPhase>(route.params.phase ?? "active");
 
@@ -33,22 +39,41 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
   };
 
   return (
-    <LinearGradient colors={BG[phase]} style={{ flex: 1 }} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }}>
+    <LinearGradient
+      colors={BG[phase]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+    >
       <StatusBar style="light" />
       <SafeAreaView style={{ flex: 1 }} edges={["top", "left", "right", "bottom"]}>
         <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 4 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+          >
             <Pressable
               onPress={() => navigation.goBack()}
               hitSlop={8}
-              style={{ width: touch.min, height: touch.min, alignItems: "center", justifyContent: "center" }}
+              style={{
+                width: touch.min,
+                height: touch.min,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <MaterialCommunityIcons name="chevron-left" size={26} color="#F8FAFC" />
             </Pressable>
-            <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: "#F8FAFC" }}>Workout Player</Text>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: "#F8FAFC" }}>
+              Workout Player
+            </Text>
             <Pressable
               hitSlop={8}
-              style={{ width: touch.min, height: touch.min, alignItems: "center", justifyContent: "center" }}
+              style={{
+                width: touch.min,
+                height: touch.min,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
             >
               <MaterialCommunityIcons name="dots-horizontal" size={20} color="#F8FAFC" />
             </Pressable>
@@ -66,7 +91,9 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
               >
                 00:45
               </Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#86EFAC", marginTop: 6 }}>Active workout</Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#86EFAC", marginTop: 6 }}>
+                Active workout
+              </Text>
               <Text
                 style={{
                   fontFamily: font.extrabold,
@@ -79,7 +106,9 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
               >
                 {exercise.name}
               </Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#CBD5E1", marginTop: 8 }}>Exercise 2 of 10</Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#CBD5E1", marginTop: 8 }}>
+                Exercise 2 of 10
+              </Text>
               <View style={{ flex: 1 }} />
               <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#F8FAFC" }}>Skip</Text>
               <View
@@ -91,8 +120,14 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                   width: "100%",
                 }}
               >
-                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>Upcoming</Text>
-                <Text style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 4 }}>Lunges · 00:40</Text>
+                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>
+                  Upcoming
+                </Text>
+                <Text
+                  style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 4 }}
+                >
+                  Lunges · 00:40
+                </Text>
               </View>
               <Pressable
                 onPress={() => setPhase("paused")}
@@ -113,8 +148,21 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
 
           {phase === "paused" && (
             <View style={{ flex: 1, marginTop: 20, alignItems: "center" }}>
-              <Text style={{ fontFamily: font.extrabold, fontSize: 68, letterSpacing: -2.2, color: "#FDE68A" }}>00:23</Text>
-              <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: "#F59E0B", marginTop: 6 }}>Paused</Text>
+              <Text
+                style={{
+                  fontFamily: font.extrabold,
+                  fontSize: 68,
+                  letterSpacing: -2.2,
+                  color: "#FDE68A",
+                }}
+              >
+                00:23
+              </Text>
+              <Text
+                style={{ fontFamily: font.extrabold, fontSize: 12, color: "#F59E0B", marginTop: 6 }}
+              >
+                Paused
+              </Text>
               <Text
                 style={{
                   fontFamily: font.extrabold,
@@ -127,8 +175,14 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
               >
                 {exercise.name}
               </Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 11, color: "#FED7AA", marginTop: 8 }}>Rest starts in 5s</Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#CBD5E1", marginTop: 12 }}>Exercise 2 of 10</Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 11, color: "#FED7AA", marginTop: 8 }}>
+                Rest starts in 5s
+              </Text>
+              <Text
+                style={{ fontFamily: font.bold, fontSize: 12, color: "#CBD5E1", marginTop: 12 }}
+              >
+                Exercise 2 of 10
+              </Text>
               <View style={{ flex: 1 }} />
               <View
                 style={{
@@ -139,8 +193,14 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                   width: "100%",
                 }}
               >
-                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>Upcoming</Text>
-                <Text style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 4 }}>Rest · 00:20</Text>
+                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>
+                  Upcoming
+                </Text>
+                <Text
+                  style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 4 }}
+                >
+                  Rest · 00:20
+                </Text>
               </View>
               <Pressable
                 onPress={() => setPhase("active")}
@@ -156,18 +216,52 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                 <MaterialCommunityIcons name="play" size={28} color="#F8FAFC" />
               </Pressable>
               <Pressable onPress={() => setPhase("completed")}>
-                <Text style={{ fontFamily: font.bold, fontSize: 12, color: "#94A3B8", marginBottom: 16 }}>End session (demo)</Text>
+                <Text
+                  style={{
+                    fontFamily: font.bold,
+                    fontSize: 12,
+                    color: "#94A3B8",
+                    marginBottom: 16,
+                  }}
+                >
+                  End session (demo)
+                </Text>
               </Pressable>
             </View>
           )}
 
           {phase === "completed" && (
             <View style={{ flex: 1, marginTop: 24, alignItems: "center" }}>
-              <Text style={{ fontFamily: font.extrabold, fontSize: 32, letterSpacing: -0.8, color: colors.white }}>Great job!</Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 13, color: "#A7F3D0", marginTop: 8, textAlign: "center" }}>
+              <Text
+                style={{
+                  fontFamily: font.extrabold,
+                  fontSize: 32,
+                  letterSpacing: -0.8,
+                  color: colors.white,
+                }}
+              >
+                Great job!
+              </Text>
+              <Text
+                style={{
+                  fontFamily: font.bold,
+                  fontSize: 13,
+                  color: "#A7F3D0",
+                  marginTop: 8,
+                  textAlign: "center",
+                }}
+              >
                 You completed all 10 exercises
               </Text>
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 28, width: "100%", justifyContent: "center" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  gap: 12,
+                  marginTop: 28,
+                  width: "100%",
+                  justifyContent: "center",
+                }}
+              >
                 <StatPill label="Calories" value="312 kcal" />
                 <StatPill label="Duration" value="31 min" />
                 <StatPill label="Streak" value="7 days" />
@@ -181,8 +275,14 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                   width: "100%",
                 }}
               >
-                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>Next suggestion</Text>
-                <Text style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 6 }}>Recovery Stretch · 12 min</Text>
+                <Text style={{ fontFamily: font.extrabold, fontSize: 11, color: "#9CA3AF" }}>
+                  Next suggestion
+                </Text>
+                <Text
+                  style={{ fontFamily: font.bold, fontSize: 13, color: "#F9FAFB", marginTop: 6 }}
+                >
+                  Recovery Stretch · 12 min
+                </Text>
               </View>
               <View style={{ flex: 1 }} />
               <View style={{ flexDirection: "row", gap: 12, marginBottom: 12, width: "100%" }}>
@@ -196,7 +296,9 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>Back to Plan</Text>
+                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>
+                    Back to Plan
+                  </Text>
                 </Pressable>
                 <Pressable
                   onPress={onDone}
@@ -208,7 +310,9 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
                     alignItems: "center",
                   }}
                 >
-                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.white }}>Done</Text>
+                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.white }}>
+                    Done
+                  </Text>
                 </Pressable>
               </View>
             </View>
@@ -223,7 +327,9 @@ function StatPill(props: { label: string; value: string }): ReactElement {
   return (
     <View style={{ alignItems: "center", minWidth: 88 }}>
       <Text style={{ fontFamily: font.bold, fontSize: 11, color: "#9CA3AF" }}>{props.label}</Text>
-      <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.white, marginTop: 4 }}>{props.value}</Text>
+      <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.white, marginTop: 4 }}>
+        {props.value}
+      </Text>
     </View>
   );
 }

@@ -27,7 +27,10 @@ const defaultLunch: LoggedLine[] = [
   { id: "l2", name: "Avocado salad", kcal: 160, sub: "Mixed greens" },
 ];
 
-const initial: Pick<NutritionLogState, "goalKcal" | "waterL" | "waterGoalL" | "breakfast" | "lunch" | "dinner"> = {
+const initial: Pick<
+  NutritionLogState,
+  "goalKcal" | "waterL" | "waterGoalL" | "breakfast" | "lunch" | "dinner"
+> = {
   goalKcal: 2200,
   waterL: 1.5,
   waterGoalL: 2,
@@ -59,11 +62,16 @@ export const useNutritionLogStore = create<NutritionLogState>((set, get) => ({
     }),
 }));
 
-export function consumedToday(state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">): number {
+export function consumedToday(
+  state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">,
+): number {
   return sumKcal(state.breakfast) + sumKcal(state.lunch) + sumKcal(state.dinner);
 }
 
-export function mealTotal(state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">, meal: MealSlot): number {
+export function mealTotal(
+  state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">,
+  meal: MealSlot,
+): number {
   switch (meal) {
     case "breakfast":
       return sumKcal(state.breakfast);
@@ -76,7 +84,10 @@ export function mealTotal(state: Pick<NutritionLogState, "breakfast" | "lunch" |
   }
 }
 
-export function mealLines(state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">, meal: MealSlot): LoggedLine[] {
+export function mealLines(
+  state: Pick<NutritionLogState, "breakfast" | "lunch" | "dinner">,
+  meal: MealSlot,
+): LoggedLine[] {
   switch (meal) {
     case "breakfast":
       return state.breakfast;

@@ -12,7 +12,10 @@ import type { MealSlot } from "../data/nutrition-demo";
 import type { NutritionStackScreenProps } from "../navigation/nutrition-stack-types";
 import { useNutritionLogStore } from "../store/nutrition-log-store";
 
-export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackScreenProps<"FoodDetail">): ReactElement {
+export function NutritionFoodDetailScreen({
+  navigation,
+  route,
+}: NutritionStackScreenProps<"FoodDetail">): ReactElement {
   const food = getFoodById(route.params.foodId);
   const targetMeal: MealSlot = route.params.targetMeal ?? "lunch";
   const [qty, setQty] = useState(1);
@@ -20,12 +23,19 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
 
   if (food == null) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top", "left", "right", "bottom"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.white }}
+        edges={["top", "left", "right", "bottom"]}
+      >
         <StatusBar style="dark" />
         <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>Food not found.</Text>
+          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>
+            Food not found.
+          </Text>
           <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.cyan600 }}>Go back</Text>
+            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.cyan600 }}>
+              Go back
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -45,11 +55,29 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.white }}
+      edges={["top", "left", "right"]}
+    >
       <StatusBar style="dark" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8 }}>
-          <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" style={iconBtn}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120 }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingTop: 8,
+          }}
+        >
+          <Pressable
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={iconBtn}
+          >
             <MaterialCommunityIcons name="chevron-left" size={24} color={colors.slate900} />
           </Pressable>
         </View>
@@ -70,8 +98,26 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
         </View>
 
         <View style={{ paddingHorizontal: 20, gap: 12, marginTop: 20 }}>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 28, letterSpacing: -0.8, color: colors.slate900 }}>{food.name}</Text>
-          <Text style={{ fontFamily: font.medium, fontSize: 15, color: colors.slate600, lineHeight: 22 }}>{food.blurb}</Text>
+          <Text
+            style={{
+              fontFamily: font.extrabold,
+              fontSize: 28,
+              letterSpacing: -0.8,
+              color: colors.slate900,
+            }}
+          >
+            {food.name}
+          </Text>
+          <Text
+            style={{
+              fontFamily: font.medium,
+              fontSize: 15,
+              color: colors.slate600,
+              lineHeight: 22,
+            }}
+          >
+            {food.blurb}
+          </Text>
 
           <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
             <MacroChip label="Protein" value={food.protein} />
@@ -91,15 +137,42 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
               ...iosCardShadow,
             }}
           >
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>Serving size</Text>
-              <Text style={{ fontFamily: font.semibold, fontSize: 14, color: colors.slate900 }}>{food.serving}</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>
+                Serving size
+              </Text>
+              <Text style={{ fontFamily: font.semibold, fontSize: 14, color: colors.slate900 }}>
+                {food.serving}
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>Calories</Text>
-              <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>{totalKcal} kcal</Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>
+                Calories
+              </Text>
+              <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>
+                {totalKcal} kcal
+              </Text>
             </View>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 24 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 24,
+              }}
+            >
               <Pressable
                 onPress={() => setQty((q) => Math.max(1, q - 1))}
                 accessibilityRole="button"
@@ -108,7 +181,15 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
               >
                 <MaterialCommunityIcons name="minus" size={22} color={colors.slate900} />
               </Pressable>
-              <Text style={{ fontFamily: font.extrabold, fontSize: 22, color: colors.slate900, minWidth: 40, textAlign: "center" }}>
+              <Text
+                style={{
+                  fontFamily: font.extrabold,
+                  fontSize: 22,
+                  color: colors.slate900,
+                  minWidth: 40,
+                  textAlign: "center",
+                }}
+              >
                 {qty}
               </Text>
               <Pressable
@@ -120,7 +201,14 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
                 <MaterialCommunityIcons name="plus" size={22} color={colors.slate900} />
               </Pressable>
             </View>
-            <Text style={{ fontFamily: font.medium, fontSize: 12, color: colors.slate500, textAlign: "center" }}>
+            <Text
+              style={{
+                fontFamily: font.medium,
+                fontSize: 12,
+                color: colors.slate500,
+                textAlign: "center",
+              }}
+            >
               Logging to {mealLabel(targetMeal)}
             </Text>
           </View>
@@ -184,7 +272,14 @@ const stepBtn = {
 
 function MacroChip({ label, value }: { label: string; value: string }): ReactElement {
   return (
-    <View style={{ paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, backgroundColor: colors.slate100 }}>
+    <View
+      style={{
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        backgroundColor: colors.slate100,
+      }}
+    >
       <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.slate500 }}>{label}</Text>
       <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate900 }}>{value}</Text>
     </View>

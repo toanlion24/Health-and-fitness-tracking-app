@@ -45,7 +45,9 @@ const FILTER_CHIPS: { key: LevelFilter; label: string }[] = [
   { key: "advanced", label: "Advanced" },
 ];
 
-export function WorkoutListScreen({ navigation }: WorkoutStackScreenProps<"WorkoutList">): ReactElement {
+export function WorkoutListScreen({
+  navigation,
+}: WorkoutStackScreenProps<"WorkoutList">): ReactElement {
   const [filter, setFilter] = useState<LevelFilter>("all");
 
   const data = useMemo(() => {
@@ -56,8 +58,22 @@ export function WorkoutListScreen({ navigation }: WorkoutStackScreenProps<"Worko
   return (
     <Module01Layout variant="workoutList" contentInset={[10, 20, 18, 20]} scrollable={false}>
       <View style={{ flex: 1, width: "100%" }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 14 }}>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 30, letterSpacing: -0.8, color: colors.slate900 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            marginBottom: 14,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: font.extrabold,
+              fontSize: 30,
+              letterSpacing: -0.8,
+              color: colors.slate900,
+            }}
+          >
             Workout
           </Text>
           <Pressable
@@ -132,8 +148,17 @@ export function WorkoutListScreen({ navigation }: WorkoutStackScreenProps<"Worko
               }}
             >
               <View>
-                <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate900 }}>7-Day Plan</Text>
-                <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate500, marginTop: 4 }}>
+                <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate900 }}>
+                  7-Day Plan
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: font.semibold,
+                    fontSize: 12,
+                    color: colors.slate500,
+                    marginTop: 4,
+                  }}
+                >
                   Beginner · Fat Loss · tap to open
                 </Text>
               </View>
@@ -141,7 +166,10 @@ export function WorkoutListScreen({ navigation }: WorkoutStackScreenProps<"Worko
             </Pressable>
           }
           renderItem={({ item }) => (
-            <ExerciseRow exercise={item} onPress={() => navigation.navigate("WorkoutDetail", { exerciseId: item.id })} />
+            <ExerciseRow
+              exercise={item}
+              onPress={() => navigation.navigate("WorkoutDetail", { exerciseId: item.id })}
+            />
           )}
         />
       </View>
@@ -174,7 +202,9 @@ function ExerciseRow(props: { exercise: Exercise; onPress: () => void }): ReactE
           accessibilityIgnoresInvertColors
         />
         <View style={{ flex: 1, gap: 4 }}>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 14, color: colors.slate900 }}>{exercise.name}</Text>
+          <Text style={{ fontFamily: font.extrabold, fontSize: 14, color: colors.slate900 }}>
+            {exercise.name}
+          </Text>
           <View
             style={{
               alignSelf: "flex-start",
@@ -184,7 +214,9 @@ function ExerciseRow(props: { exercise: Exercise; onPress: () => void }): ReactE
               paddingHorizontal: 8,
             }}
           >
-            <Text style={{ fontFamily: font.bold, fontSize: 10, color: ls.chipText }}>{ls.label}</Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 10, color: ls.chipText }}>
+              {ls.label}
+            </Text>
           </View>
         </View>
       </View>
@@ -192,7 +224,14 @@ function ExerciseRow(props: { exercise: Exercise; onPress: () => void }): ReactE
         <Text style={{ fontFamily: font.extrabold, fontSize: 10, color: colors.slate600 }}>
           🔥 {exercise.kcal} kcal · ⏱ {exercise.minutes} min · 💪 {exercise.muscle}
         </Text>
-        <View style={{ borderRadius: 10, backgroundColor: colors.slate900, paddingVertical: 7, paddingHorizontal: 10 }}>
+        <View
+          style={{
+            borderRadius: 10,
+            backgroundColor: colors.slate900,
+            paddingVertical: 7,
+            paddingHorizontal: 10,
+          }}
+        >
           <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.white }}>Start</Text>
         </View>
       </View>

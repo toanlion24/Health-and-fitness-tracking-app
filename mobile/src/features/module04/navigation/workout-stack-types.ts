@@ -9,4 +9,7 @@ export type WorkoutStackParamList = {
   WorkoutPlan: undefined;
 };
 
-export type WorkoutStackScreenProps<T extends keyof WorkoutStackParamList> = StackScreenProps<WorkoutStackParamList, T>;
+export type WorkoutStackScreenProps<T extends keyof WorkoutStackParamList> = StackScreenProps<
+  WorkoutStackParamList,
+  T
+>;

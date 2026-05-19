@@ -18,10 +18,21 @@ const MEAL_LABEL: Record<MealSlot, string> = {
   dinner: "Dinner",
 };
 
-export function NutritionDashboardScreen({ navigation }: NutritionStackScreenProps<"NutritionDashboard">): ReactElement {
+export function NutritionDashboardScreen({
+  navigation,
+}: NutritionStackScreenProps<"NutritionDashboard">): ReactElement {
   const insets = useSafeAreaInsets();
   const profile = useModule01Store();
-  const goalFromProfile = goalDailyCalories(profile.goal, computeEnergyTargets(profile.gender, profile.age, profile.heightCm, profile.weightKg, profile.activity).tdee);
+  const goalFromProfile = goalDailyCalories(
+    profile.goal,
+    computeEnergyTargets(
+      profile.gender,
+      profile.age,
+      profile.heightCm,
+      profile.weightKg,
+      profile.activity,
+    ).tdee,
+  );
 
   const goalKcal = useNutritionLogStore((s) => s.goalKcal);
   const setGoalKcal = useNutritionLogStore((s) => s.setGoalKcal);
@@ -49,14 +60,36 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
   };
 
   return (
-    <Module01Layout variant="homePremium" contentInset={[14, 20, fabBottom + 72, 20]} scrollable={false}>
+    <Module01Layout
+      variant="homePremium"
+      contentInset={[14, 20, fabBottom + 72, 20]}
+      scrollable={false}
+    >
       <View style={{ flex: 1 }}>
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: spaceExtra }}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: spaceExtra }}
+        >
           <View style={{ gap: 18 }}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+              }}
+            >
               <View style={{ flex: 1, gap: 4 }}>
-                <Text style={{ fontFamily: font.semibold, fontSize: 14, color: colors.slate500 }}>Today</Text>
-                <Text style={{ fontFamily: font.extrabold, fontSize: 26, letterSpacing: -0.6, color: colors.slate900 }}>
+                <Text style={{ fontFamily: font.semibold, fontSize: 14, color: colors.slate500 }}>
+                  Today
+                </Text>
+                <Text
+                  style={{
+                    fontFamily: font.extrabold,
+                    fontSize: 26,
+                    letterSpacing: -0.6,
+                    color: colors.slate900,
+                  }}
+                >
                   Nutrition
                 </Text>
               </View>
@@ -81,10 +114,25 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
                 ...iosCardShadow,
               }}
             >
-              <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Daily calories</Text>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>
+                Daily calories
+              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "flex-end",
+                }}
+              >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: font.extrabold, fontSize: 36, letterSpacing: -1, color: colors.slate900 }}>
+                  <Text
+                    style={{
+                      fontFamily: font.extrabold,
+                      fontSize: 36,
+                      letterSpacing: -1,
+                      color: colors.slate900,
+                    }}
+                  >
                     {consumed.toLocaleString()}
                   </Text>
                   <Text style={{ fontFamily: font.medium, fontSize: 14, color: colors.slate500 }}>
@@ -99,15 +147,34 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
                     backgroundColor: "#ECFDF5",
                   }}
                 >
-                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.emerald600 }}>{Math.round(ratio * 100)}%</Text>
+                  <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.emerald600 }}>
+                    {Math.round(ratio * 100)}%
+                  </Text>
                 </View>
               </View>
-              <View style={{ height: 8, borderRadius: 999, backgroundColor: colors.slate100, overflow: "hidden" }}>
-                <View style={{ width: `${ratio * 100}%`, height: "100%", backgroundColor: colors.emerald600 }} />
+              <View
+                style={{
+                  height: 8,
+                  borderRadius: 999,
+                  backgroundColor: colors.slate100,
+                  overflow: "hidden",
+                }}
+              >
+                <View
+                  style={{
+                    width: `${ratio * 100}%`,
+                    height: "100%",
+                    backgroundColor: colors.emerald600,
+                  }}
+                />
               </View>
             </View>
 
-            <Text style={{ fontFamily: font.bold, fontSize: 13, color: colors.slate700, marginTop: 4 }}>Meals</Text>
+            <Text
+              style={{ fontFamily: font.bold, fontSize: 13, color: colors.slate700, marginTop: 4 }}
+            >
+              Meals
+            </Text>
 
             <MealSummaryCard
               label={MEAL_LABEL.breakfast}
@@ -139,15 +206,36 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
                 ...iosCardShadow,
               }}
             >
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Water</Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>
+                  Water
+                </Text>
                 <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.cyan600 }}>
                   {waterL.toFixed(1)} / {waterGoalL.toFixed(1)} L
                 </Text>
               </View>
               <View style={{ marginTop: 12 }}>
-                <View style={{ height: 8, borderRadius: 999, backgroundColor: colors.slate100, overflow: "hidden" }}>
-                  <View style={{ width: `${waterRatio * 100}%`, height: "100%", backgroundColor: colors.cyan600 }} />
+                <View
+                  style={{
+                    height: 8,
+                    borderRadius: 999,
+                    backgroundColor: colors.slate100,
+                    overflow: "hidden",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: `${waterRatio * 100}%`,
+                      height: "100%",
+                      backgroundColor: colors.cyan600,
+                    }}
+                  />
                 </View>
               </View>
               <View
@@ -255,7 +343,13 @@ type MealSummaryProps = {
   emphasizeEmpty?: boolean;
 };
 
-function MealSummaryCard({ label, kcal, onOpen, onAdd, emphasizeEmpty }: MealSummaryProps): ReactElement {
+function MealSummaryCard({
+  label,
+  kcal,
+  onOpen,
+  onAdd,
+  emphasizeEmpty,
+}: MealSummaryProps): ReactElement {
   const empty = kcal <= 0;
   return (
     <View
@@ -282,7 +376,13 @@ function MealSummaryCard({ label, kcal, onOpen, onAdd, emphasizeEmpty }: MealSum
         style={{ flex: 1, gap: 4, paddingRight: 8 }}
       >
         <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{label}</Text>
-        <Text style={{ fontFamily: font.medium, fontSize: 13, color: empty ? colors.slate400 : colors.slate600 }}>
+        <Text
+          style={{
+            fontFamily: font.medium,
+            fontSize: 13,
+            color: empty ? colors.slate400 : colors.slate600,
+          }}
+        >
           {empty ? "Tap to add foods" : `${kcal.toLocaleString()} kcal logged`}
         </Text>
       </Pressable>

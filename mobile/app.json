@@ -34,7 +34,13 @@
           "color": "#f97316"
         }
       ],
-      "expo-font"
+      "expo-font",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Cho phép ứng dụng truy cập vị trí để theo dõi quãng đường chạy bộ của bạn."
+        }
+      ]
     ]
   }
 }

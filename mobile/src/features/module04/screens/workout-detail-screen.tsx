@@ -15,17 +15,27 @@ const LEVEL_CHIP: Record<string, { bg: string; text: string }> = {
   advanced: { bg: "#FEE2E2", text: "#B91C1C" },
 };
 
-export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenProps<"WorkoutDetail">): ReactElement {
+export function WorkoutDetailScreen({
+  navigation,
+  route,
+}: WorkoutStackScreenProps<"WorkoutDetail">): ReactElement {
   const exercise = getExerciseById(route.params.exerciseId);
 
   if (exercise == null) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top", "left", "right", "bottom"]}>
+      <SafeAreaView
+        style={{ flex: 1, backgroundColor: colors.white }}
+        edges={["top", "left", "right", "bottom"]}
+      >
         <StatusBar style="dark" />
         <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>Exercise not found.</Text>
+          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>
+            Exercise not found.
+          </Text>
           <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.cyan600 }}>Go back</Text>
+            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.cyan600 }}>
+              Go back
+            </Text>
           </Pressable>
         </View>
       </SafeAreaView>
@@ -39,10 +49,23 @@ export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenPro
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.white }} edges={["top", "left", "right"]}>
+    <SafeAreaView
+      style={{ flex: 1, backgroundColor: colors.white }}
+      edges={["top", "left", "right"]}
+    >
       <StatusBar style="dark" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 36 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 8 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 36 }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingTop: 8,
+          }}
+        >
           <Pressable
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
@@ -86,10 +109,25 @@ export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenPro
         />
 
         <View style={{ paddingHorizontal: 20, gap: 14, marginTop: 12 }}>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 32, letterSpacing: -1, color: colors.slate900 }}>
+          <Text
+            style={{
+              fontFamily: font.extrabold,
+              fontSize: 32,
+              letterSpacing: -1,
+              color: colors.slate900,
+            }}
+          >
             {exercise.name}
           </Text>
-          <View style={{ alignSelf: "flex-start", borderRadius: 999, backgroundColor: lc.bg, paddingVertical: 6, paddingHorizontal: 10 }}>
+          <View
+            style={{
+              alignSelf: "flex-start",
+              borderRadius: 999,
+              backgroundColor: lc.bg,
+              paddingVertical: 6,
+              paddingHorizontal: 10,
+            }}
+          >
             <Text style={{ fontFamily: font.bold, fontSize: 11, color: lc.text }}>
               {exercise.level.charAt(0).toUpperCase() + exercise.level.slice(1)}
             </Text>
@@ -112,13 +150,27 @@ export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenPro
               ...iosCardShadow,
             }}
           >
-            <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: colors.slate500 }}>Sets & Reps</Text>
-            <Text style={{ fontFamily: font.extrabold, fontSize: 18, color: colors.slate900 }}>{exercise.setsReps}</Text>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: colors.slate500 }}>
+              Sets & Reps
+            </Text>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 18, color: colors.slate900 }}>
+              {exercise.setsReps}
+            </Text>
           </View>
 
-          <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.slate900 }}>Instructions</Text>
+          <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.slate900 }}>
+            Instructions
+          </Text>
           {exercise.instructions.map((line, i) => (
-            <Text key={i} style={{ fontFamily: font.semibold, fontSize: 12, lineHeight: 17, color: colors.slate700 }}>
+            <Text
+              key={i}
+              style={{
+                fontFamily: font.semibold,
+                fontSize: 12,
+                lineHeight: 17,
+                color: colors.slate700,
+              }}
+            >
               {i + 1}. {line}
             </Text>
           ))}
@@ -134,7 +186,9 @@ export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenPro
             }}
           >
             <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: "#1D4ED8" }}>Tips</Text>
-            <Text style={{ fontFamily: font.bold, fontSize: 12, lineHeight: 17, color: "#1E3A8A" }}>{exercise.tip}</Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 12, lineHeight: 17, color: "#1E3A8A" }}>
+              {exercise.tip}
+            </Text>
           </View>
 
           <GradientPrimaryButton label="Start Workout" onPress={start} height={60} />
@@ -156,7 +210,9 @@ function MetaChip(props: { text: string }): ReactElement {
         backgroundColor: "#FAFBFC",
       }}
     >
-      <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate700 }}>{props.text}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate700 }}>
+        {props.text}
+      </Text>
     </View>
   );
 }

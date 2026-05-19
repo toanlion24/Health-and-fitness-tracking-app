@@ -19,11 +19,15 @@ const DAYS = [
 
 const DAY_EXERCISES = ["Push Up · 4 min", "Squat · 4 min", "Plank · 3 min", "Jumping Jack · 3 min"];
 
-export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"WorkoutPlan">): ReactElement {
+export function WorkoutPlanScreen({
+  navigation,
+}: WorkoutStackScreenProps<"WorkoutPlan">): ReactElement {
   return (
     <Module01Layout variant="workoutList" contentInset={[10, 20, 22, 20]} scrollable>
       <View style={{ width: "100%", gap: 16, flex: 1 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <View
+          style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
+        >
           <Pressable
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
@@ -42,16 +46,31 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
           >
             <MaterialCommunityIcons name="chevron-left" size={24} color={colors.slate900} />
           </Pressable>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 14, color: colors.slate900 }}>Plan</Text>
+          <Text style={{ fontFamily: font.extrabold, fontSize: 14, color: colors.slate900 }}>
+            Plan
+          </Text>
           <View style={{ width: touch.min }} />
         </View>
 
-        <Text style={{ fontFamily: font.extrabold, fontSize: 28, letterSpacing: -0.7, color: colors.slate900 }}>
+        <Text
+          style={{
+            fontFamily: font.extrabold,
+            fontSize: 28,
+            letterSpacing: -0.7,
+            color: colors.slate900,
+          }}
+        >
           7-Day Plan
         </Text>
-        <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>Beginner · Fat Loss</Text>
+        <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>
+          Beginner · Fat Loss
+        </Text>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+        >
           {DAYS.map((d) => (
             <View
               key={d.id}
@@ -76,7 +95,14 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
                 {d.label}
               </Text>
               {d.sub != null && (
-                <Text style={{ fontFamily: font.bold, fontSize: 9, color: d.rest ? "#B45309" : "#0284C7", marginTop: 4 }}>
+                <Text
+                  style={{
+                    fontFamily: font.bold,
+                    fontSize: 9,
+                    color: d.rest ? "#B45309" : "#0284C7",
+                    marginTop: 4,
+                  }}
+                >
                   {d.sub}
                 </Text>
               )}
@@ -94,7 +120,9 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
             gap: 10,
           }}
         >
-          <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.slate900 }}>Today · Full Body Burn</Text>
+          <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.slate900 }}>
+            Today · Full Body Burn
+          </Text>
           <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>
             10 exercises · 32 min · ~310 kcal
           </Text>
@@ -104,20 +132,28 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
             end={{ x: 1, y: 0.5 }}
             style={{ borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 }}
           >
-            <Text style={{ fontFamily: font.extrabold, fontSize: 15, color: colors.white }}>Start</Text>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 15, color: colors.white }}>
+              Start
+            </Text>
           </LinearGradient>
         </View>
 
-        <Text style={{ fontFamily: font.extrabold, fontSize: 13, color: colors.slate900 }}>Exercise List</Text>
+        <Text style={{ fontFamily: font.extrabold, fontSize: 13, color: colors.slate900 }}>
+          Exercise List
+        </Text>
         {DAY_EXERCISES.map((line) => (
           <Text key={line} style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate700 }}>
             {line}
           </Text>
         ))}
-        <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.slate400 }}>... +6 exercises</Text>
+        <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.slate400 }}>
+          ... +6 exercises
+        </Text>
 
         <Pressable
-          onPress={() => navigation.navigate("WorkoutPlayer", { exerciseId: "push-up", phase: "active" })}
+          onPress={() =>
+            navigation.navigate("WorkoutPlayer", { exerciseId: "push-up", phase: "active" })
+          }
           style={{ marginTop: 8 }}
         >
           <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.cyan600 }}>
