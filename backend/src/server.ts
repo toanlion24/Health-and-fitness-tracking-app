@@ -8,6 +8,6 @@ const env = loadEnv();
 const app = createApp();
 const server = createServer(app);
 
-server.listen(env.PORT, () => {
-  getLogger().info({ port: env.PORT }, "API listening");
+server.listen(env.PORT, "0.0.0.0", () => {
+  getLogger().info({ port: env.PORT }, "API listening on 0.0.0.0");
 });

@@ -20,6 +20,9 @@ import type { ProfileStackScreenProps } from "../navigation/profile-stack-types"
 
 type ChatLine = { id: string; role: "user" | "assistant"; text: string };
 
+// ⚠️ ĐIỀN ĐỊA CHỈ IP MÁY TÍNH CỦA BẠN VÀO ĐÂY (Giữ nguyên cổng 3000 nếu backend đang chạy cổng đó)
+const BACKEND_URL = "http://192.168.1.183:3000/api/chat/ask";
+
 export function NotificationsAiCoachScreen({
   navigation,
   route,
@@ -28,46 +31,81 @@ export function NotificationsAiCoachScreen({
   const scrollRef = useRef<ScrollView>(null);
   const appliedInitialRef = useRef(false);
   const [input, setInput] = useState("");
+  
+  // 1. Đổi câu chào ban đầu thành thật hơn, bỏ hàng demo đi
   const [lines, setLines] = useState<ChatLine[]>([
     {
       id: "a0",
       role: "assistant",
-      text: t("notifications.coachDemoReply"),
+      text: "Chào bạn, tôi là Coach Kai. Hôm nay tình hình sức khỏe và tập luyện của bạn thế nào?",
     },
   ]);
 
+  // Hàm gọi API thực tế xuống Backend
+  const fetchAIReply = async (userText: string) => {
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userText }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data; // Lấy câu trả lời từ Puter.js trả về
+      } else {
+        throw new Error("Lỗi logic từ backend");
+      }
+    } catch (error) {
+      console.error("Lỗi gọi AI:", error);
+      // Dùng câu thông báo lỗi chúng ta đã cài đặt trong vi.json lúc nãy
+      return t("chat.errorNetwork") || "Xin lỗi, hiện tại máy chủ AI đang nghỉ ngơi một chút.";
+    }
+  };
+
   useEffect(() => {
-    if (appliedInitialRef.current) {
-      return;
-    }
+    if (appliedInitialRef.current) return;
+    
     const trimmed = route.params?.initialMessage?.trim();
-    if (!trimmed) {
-      return;
-    }
+    if (!trimmed) return;
+    
     appliedInitialRef.current = true;
-    const userLine: ChatLine = { id: `u-${Date.now()}`, role: "user", text: trimmed };
-    const reply: ChatLine = {
-      id: `a-${Date.now()}`,
-      role: "assistant",
-      text: t("notifications.coachDemoReply"),
+    
+    const processInitialMessage = async () => {
+      // Đẩy câu hỏi của người dùng lên màn hình trước
+      const userLine: ChatLine = { id: `u-${Date.now()}`, role: "user", text: trimmed };
+      setLines((prev) => [...prev, userLine]);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+
+      // Gọi API lấy câu trả lời
+      const replyText = await fetchAIReply(trimmed);
+      
+      // Đẩy câu trả lời thật vào
+      const replyLine: ChatLine = { id: `a-${Date.now()}`, role: "assistant", text: replyText };
+      setLines((prev) => [...prev, replyLine]);
+      requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
     };
-    setLines((prev) => [...prev, userLine, reply]);
-    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+
+    processInitialMessage();
   }, [route.params, t]);
 
-  const send = (): void => {
+  const send = async (): Promise<void> => {
     const trimmed = input.trim();
-    if (!trimmed) {
-      return;
-    }
+    if (!trimmed) return;
+    
+    // 1. Hiển thị tin nhắn của User ngay lập tức
     const userLine: ChatLine = { id: `u-${Date.now()}`, role: "user", text: trimmed };
-    const reply: ChatLine = {
-      id: `a-${Date.now()}`,
-      role: "assistant",
-      text: t("notifications.coachDemoReply"),
-    };
-    setLines((prev) => [...prev, userLine, reply]);
+    setLines((prev) => [...prev, userLine]);
     setInput("");
+    requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
+
+    // 2. Gọi API Backend (Puter.js)
+    const replyText = await fetchAIReply(trimmed);
+
+    // 3. Hiển thị tin nhắn của AI
+    const replyLine: ChatLine = { id: `a-${Date.now()}`, role: "assistant", text: replyText };
+    setLines((prev) => [...prev, replyLine]);
     requestAnimationFrame(() => scrollRef.current?.scrollToEnd({ animated: true }));
   };
 

@@ -21,7 +21,9 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@health-fitness/shared": "*",
+    "@heyputer/puter.js": "^2.3.4",
     "@prisma/client": "^6.19.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",

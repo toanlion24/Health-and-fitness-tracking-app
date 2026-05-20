@@ -11,6 +11,7 @@ import { createProgressRouter } from "./modules/progress/progress.routes.js";
 import { createRemindersRouter } from "./modules/reminders/reminders.routes.js";
 import { createUsersRouter } from "./modules/users/users.routes.js";
 import { createWorkoutsRouter } from "./modules/workouts/workouts.routes.js";
+import { createChatMessagesRouter } from "./modules/chat-messages/chat-messages.routes.js";
 
 export function createApp(): express.Express {
   const app = express();
@@ -54,6 +55,7 @@ export function createApp(): express.Express {
   app.use("/api/v1", createBodyMetricsRouter());
   app.use("/api/v1", createProgressRouter());
   app.use("/api/v1", createRemindersRouter());
+  app.use("/api/chat", createChatMessagesRouter());
 
   app.use(errorHandlerMiddleware);
   return app;
