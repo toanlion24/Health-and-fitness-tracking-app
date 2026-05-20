@@ -1,218 +1,155 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { GradientPrimaryButton } from "../../module01/components/gradient-primary-button";
-import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens";
+import { LinearGradient } from "expo-linear-gradient";
+import { colors } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
 import { getExerciseById } from "../data/exercises";
 import type { WorkoutStackScreenProps } from "../navigation/workout-stack-types";
-
-const LEVEL_CHIP: Record<string, { bg: string; text: string }> = {
-  beginner: { bg: "#DCFCE7", text: "#166534" },
-  intermediate: { bg: "#EFF6FF", text: "#1D4ED8" },
-  advanced: { bg: "#FEE2E2", text: "#B91C1C" },
-};
 
 export function WorkoutDetailScreen({
   navigation,
   route,
 }: WorkoutStackScreenProps<"WorkoutDetail">): ReactElement {
+  // Lấy insets để tự động né "tai thỏ" (notch) hoặc thanh trạng thái của điện thoại
+  const insets = useSafeAreaInsets();
   const exercise = getExerciseById(route.params.exerciseId);
 
-  if (exercise == null) {
+  if (!exercise) {
     return (
-      <SafeAreaView
-        style={{ flex: 1, backgroundColor: colors.white }}
-        edges={["top", "left", "right", "bottom"]}
-      >
-        <StatusBar style="dark" />
-        <View style={{ flex: 1, padding: 24, justifyContent: "center" }}>
-          <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>
-            Exercise not found.
-          </Text>
-          <Pressable onPress={() => navigation.goBack()} style={{ marginTop: 16 }}>
-            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.cyan600 }}>
-              Go back
-            </Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.white }}>
+        <Text style={{ fontFamily: font.bold, color: colors.slate500 }}>Exercise not found.</Text>
+      </View>
     );
   }
 
-  const lc = LEVEL_CHIP[exercise.level];
-
-  const start = (): void => {
-    navigation.navigate("WorkoutPlayer", { exerciseId: exercise.id, phase: "active" });
-  };
-
   return (
-    <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.white }}
-      edges={["top", "left", "right"]}
-    >
-      <StatusBar style="dark" />
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 36 }}
+    <View style={{ flex: 1, backgroundColor: colors.white }}>
+      {/* Ép màu chữ trên thanh trạng thái thành màu trắng để nổi bật trên nền ảnh */}
+      <StatusBar style="light" />
+      
+      {/* ScrollView chứa nội dung chính */}
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        contentContainerStyle={{ paddingBottom: 120 }} // Chừa chỗ cho nút Start ở đáy
       >
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            paddingHorizontal: 20,
-            paddingTop: 8,
-          }}
-        >
+        {/* Khối Hero Image tràn viền trên */}
+        <View style={{ width: "100%", height: 340 }}>
+          <Image source={{ uri: exercise.detailHeroUrl }} style={{ flex: 1 }} resizeMode="cover" />
+          
+          {/* Lớp phủ đen Gradient từ trên xuống để làm rõ nút Back */}
+          <LinearGradient
+            colors={["rgba(0,0,0,0.7)", "transparent"]}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, height: 140 }}
+          />
+          
           <Pressable
             onPress={() => navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            style={{
-              width: touch.min,
-              height: touch.min,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: colors.slate200,
-              alignItems: "center",
+            hitSlop={12}
+            style={{ 
+              position: "absolute", 
+              top: insets.top + 10, 
+              left: 20, 
+              width: 44, 
+              height: 44, 
+              borderRadius: 22, 
+              backgroundColor: "rgba(0,0,0,0.25)", 
+              alignItems: "center", 
               justifyContent: "center",
-              backgroundColor: colors.white,
+              backdropFilter: "blur(10px)" // Hiệu ứng kính mờ xịn xò
             }}
           >
-            <MaterialCommunityIcons name="chevron-left" size={24} color={colors.slate900} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Favorite exercise"
-            style={{
-              width: touch.min,
-              height: touch.min,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: colors.slate200,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: colors.white,
-            }}
-          >
-            <MaterialCommunityIcons name="heart-outline" size={20} color={colors.slate900} />
+            <MaterialCommunityIcons name="chevron-left" size={28} color={colors.white} />
           </Pressable>
         </View>
 
-        <Image
-          source={{ uri: exercise.detailHeroUrl }}
-          style={{ width: "100%", height: 230, marginTop: 8 }}
-          resizeMode="cover"
-          accessibilityIgnoresInvertColors
-        />
-
-        <View style={{ paddingHorizontal: 20, gap: 14, marginTop: 12 }}>
-          <Text
-            style={{
-              fontFamily: font.extrabold,
-              fontSize: 32,
-              letterSpacing: -1,
-              color: colors.slate900,
-            }}
-          >
-            {exercise.name}
-          </Text>
-          <View
-            style={{
-              alignSelf: "flex-start",
-              borderRadius: 999,
-              backgroundColor: lc.bg,
-              paddingVertical: 6,
-              paddingHorizontal: 10,
-            }}
-          >
-            <Text style={{ fontFamily: font.bold, fontSize: 11, color: lc.text }}>
-              {exercise.level.charAt(0).toUpperCase() + exercise.level.slice(1)}
+        {/* Khối Thông tin chi tiết */}
+        <View style={{ padding: 24, gap: 24 }}>
+          
+          {/* Header */}
+          <View>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 32, color: colors.slate900, letterSpacing: -0.5 }}>
+              {exercise.name}
+            </Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate500, marginTop: 8 }}>
+              🔥 {exercise.kcal} kcal  ·  ⏱ {exercise.minutes} min  ·  💪 {exercise.muscle}
+            </Text>
+            <Text style={{ fontFamily: font.bold, fontSize: 13, color: colors.slate400, marginTop: 4 }}>
+              Recommendation: {exercise.setsReps}
             </Text>
           </View>
 
-          <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
-            <MetaChip text={`🔥 ${exercise.kcal} kcal`} />
-            <MetaChip text={`⏱ ${exercise.minutes} min`} />
-            <MetaChip text={`💪 ${exercise.muscle}`} />
+          <View style={{ height: 1, backgroundColor: colors.slate100 }} />
+
+          {/* Khối Hướng dẫn từng bước (Instructions) */}
+          <View style={{ gap: 16 }}>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 20, color: colors.slate900 }}>
+              How to perform
+            </Text>
+            
+            {exercise.instructions.map((inst, idx) => (
+              <View key={idx} style={{ flexDirection: "row", gap: 14 }}>
+                <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: colors.slate100, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: colors.slate700 }}>
+                    {idx + 1}
+                  </Text>
+                </View>
+                <Text style={{ flex: 1, fontFamily: font.semibold, fontSize: 15, color: colors.slate700, lineHeight: 24, paddingTop: 2 }}>
+                  {inst}
+                </Text>
+              </View>
+            ))}
           </View>
 
-          <View
-            style={{
-              borderRadius: radii.cardMd,
-              borderWidth: StyleSheet.hairlineWidth,
-              borderColor: colors.slate200,
-              backgroundColor: colors.white,
-              padding: 14,
-              gap: 6,
-              ...iosCardShadow,
-            }}
-          >
-            <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: colors.slate500 }}>
-              Sets & Reps
-            </Text>
-            <Text style={{ fontFamily: font.extrabold, fontSize: 18, color: colors.slate900 }}>
-              {exercise.setsReps}
-            </Text>
+          {/* Khối Lời khuyên (Pro Tip) */}
+          <View style={{ backgroundColor: "#EFF6FF", borderRadius: 16, padding: 18, flexDirection: "row", gap: 14 }}>
+            <MaterialCommunityIcons name="lightbulb-on-outline" size={26} color="#2563EB" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: font.extrabold, fontSize: 14, color: "#1E3A8A" }}>
+                Coach's Tip
+              </Text>
+              <Text style={{ fontFamily: font.semibold, fontSize: 14, color: "#1D4ED8", marginTop: 4, lineHeight: 22 }}>
+                {exercise.tip}
+              </Text>
+            </View>
           </View>
 
-          <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.slate900 }}>
-            Instructions
-          </Text>
-          {exercise.instructions.map((line, i) => (
-            <Text
-              key={i}
-              style={{
-                fontFamily: font.semibold,
-                fontSize: 12,
-                lineHeight: 17,
-                color: colors.slate700,
-              }}
-            >
-              {i + 1}. {line}
-            </Text>
-          ))}
-
-          <View
-            style={{
-              borderRadius: radii.cardMd,
-              borderWidth: 1,
-              borderColor: "#BFDBFE",
-              backgroundColor: "#EFF6FF",
-              padding: 12,
-              gap: 6,
-            }}
-          >
-            <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: "#1D4ED8" }}>Tips</Text>
-            <Text style={{ fontFamily: font.bold, fontSize: 12, lineHeight: 17, color: "#1E3A8A" }}>
-              {exercise.tip}
-            </Text>
-          </View>
-
-          <GradientPrimaryButton label="Start Workout" onPress={start} height={60} />
         </View>
       </ScrollView>
-    </SafeAreaView>
-  );
-}
 
-function MetaChip(props: { text: string }): ReactElement {
-  return (
-    <View
-      style={{
-        borderRadius: 14,
-        borderWidth: StyleSheet.hairlineWidth,
-        borderColor: colors.slate200,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
-        backgroundColor: "#FAFBFC",
-      }}
-    >
-      <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate700 }}>
-        {props.text}
-      </Text>
+      {/* Khối Nút Start cố định ở đáy màn hình */}
+      <View 
+        style={{ 
+          position: "absolute", 
+          bottom: 0, 
+          left: 0, 
+          right: 0, 
+          paddingHorizontal: 24, 
+          paddingTop: 16,
+          // Đẩy phần padding bottom lên để không bị vướng thanh vuốt (Home Indicator) của iOS
+          paddingBottom: Math.max(insets.bottom + 8, 24), 
+          backgroundColor: colors.white, 
+          borderTopWidth: 1, 
+          borderTopColor: colors.slate100 
+        }}
+      >
+        <Pressable
+          onPress={() => navigation.navigate("WorkoutPlayer", { exerciseId: exercise.id, phase: "paused" })}
+        >
+          <LinearGradient
+            colors={["#059669", "#0284C7"]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={{ borderRadius: 18, paddingVertical: 18, alignItems: "center" }}
+          >
+            <Text style={{ fontFamily: font.extrabold, fontSize: 16, color: colors.white }}>
+              Start This Exercise
+            </Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
     </View>
   );
 }

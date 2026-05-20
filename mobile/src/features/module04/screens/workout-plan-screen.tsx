@@ -126,16 +126,27 @@ export function WorkoutPlanScreen({
           <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>
             10 exercises · 32 min · ~310 kcal
           </Text>
-          <LinearGradient
-            colors={["#059669", "#0284C7"]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={{ borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 }}
+          
+          {/* Kích hoạt nút Start: Điều hướng sang Player ở trạng thái Chờ (paused) */}
+          <Pressable
+            onPress={() =>
+              navigation.navigate("WorkoutPlayer", {
+                exerciseId: "push-up",
+                phase: "paused",
+              })
+            }
           >
-            <Text style={{ fontFamily: font.extrabold, fontSize: 15, color: colors.white }}>
-              Start
-            </Text>
-          </LinearGradient>
+            <LinearGradient
+              colors={["#059669", "#0284C7"]}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ borderRadius: 14, paddingVertical: 14, alignItems: "center", marginTop: 4 }}
+            >
+              <Text style={{ fontFamily: font.extrabold, fontSize: 15, color: colors.white }}>
+                Start
+              </Text>
+            </LinearGradient>
+          </Pressable>
         </View>
 
         <Text style={{ fontFamily: font.extrabold, fontSize: 13, color: colors.slate900 }}>
@@ -149,17 +160,6 @@ export function WorkoutPlanScreen({
         <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.slate400 }}>
           ... +6 exercises
         </Text>
-
-        <Pressable
-          onPress={() =>
-            navigation.navigate("WorkoutPlayer", { exerciseId: "push-up", phase: "active" })
-          }
-          style={{ marginTop: 8 }}
-        >
-          <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.cyan600 }}>
-            Jump into demo player (Push Up) →
-          </Text>
-        </Pressable>
       </View>
     </Module01Layout>
   );
