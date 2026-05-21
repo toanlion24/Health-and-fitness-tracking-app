@@ -10,3 +10,8 @@ export const listDailyProgressQuerySchema = z.object({
 });
 
 export type ListDailyProgressQuery = z.infer<typeof listDailyProgressQuerySchema>;
+
+export const summaryProgressQuerySchema = z.object({
+  period: z.enum(["week", "month"]).default("week"),
+});
+export type SummaryProgressQuery = z.infer<typeof summaryProgressQuerySchema>;

@@ -117,7 +117,14 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
         <Text style={{ fontFamily: font.bold, fontSize: 11, color: colors.slate400 }}>... +6 exercises</Text>
 
         <Pressable
-          onPress={() => navigation.navigate("WorkoutPlayer", { exerciseId: "push-up", phase: "active" })}
+          onPress={() =>
+            navigation.navigate("WorkoutPlayer", {
+              exerciseId: "push-up",
+              exerciseName: "Push Up",
+              sessionDate: new Date().toISOString().split("T")[0],
+              phase: "active",
+            })
+          }
           style={{ marginTop: 8 }}
         >
           <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.cyan600 }}>

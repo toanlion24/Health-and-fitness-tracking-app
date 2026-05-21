@@ -2,10 +2,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
 import { Text, View } from "react-native";
+// import * as Notifications from "expo-notifications"; // Commented out to prevent crash on Expo Go SDK 53
+import { Platform } from "react-native";
 import type { Module01StackScreenProps } from "../../../core/navigation/module01-types";
 import { GradientPrimaryButton } from "../components/gradient-primary-button";
 import { Module01Layout } from "../components/module01-layout";
 import { computeBmi, bmiCategory, computeEnergyTargets, recommendationCopy } from "../lib/metrics";
+import { fetchApi } from "../../../core/lib/api";
+import { useAuthStore } from "../../../core/store/auth-store";
 import { useModule01Store } from "../store/module01-store";
 import { colors, layout } from "../theme/tokens";
 import { font } from "../theme/fonts";
@@ -161,7 +165,77 @@ export function OnboardingResultScreen({ navigation }: Module01StackScreenProps<
         </View>
 
         <View style={{ flex: 1, minHeight: 12 }} />
-        <GradientPrimaryButton label="Continue to app" height={56} onPress={() => navigation.replace("MainTabs")} />
+        <GradientPrimaryButton label="Continue to app" height={56} onPress={async () => {
+          try {
+            const dob = new Date();
+            dob.setFullYear(dob.getFullYear() - profile.age);
+            
+            // 1. Cập nhật Profile
+            await fetchApi('/users/me/profile', {
+              method: 'PATCH',
+              body: JSON.stringify({
+                gender: profile.gender,
+                dob: dob.toISOString().split('T')[0],
+                heightCm: profile.heightCm,
+                activityLevel: profile.activity,
+              })
+            });
+
+            // 2. Thêm body metrics (cân nặng)
+            await fetchApi('/body-metrics', {
+              method: 'POST',
+              body: JSON.stringify({
+                recordedAt: new Date().toISOString(),
+                weightKg: profile.weightKg
+              })
+            });
+
+            // 3. Cập nhật Goals
+            const goalMapping: Record<string, string> = {
+              lose: "weight_loss",
+              gain: "muscle_gain",
+              maintain: "maintenance",
+            };
+            const mappedGoalType = goalMapping[profile.goal] || "maintenance";
+
+            await fetchApi('/users/me/goals', {
+              method: 'PUT',
+              body: JSON.stringify({
+                goalType: mappedGoalType,
+                dailyKcalTarget: Math.round(tdee),
+                isActive: true
+              })
+            });
+
+            // 4. Tạo các nhắc nhở mặc định
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Ho_Chi_Minh";
+            const defaultReminders = [
+              { type: "water", title: "💧 Uống nước", message: "Đừng quên uống đủ nước nhé!", localHour: 9, localMinute: 0 },
+              { type: "water", title: "💧 Uống nước", message: "Nhắc nhở uống nước buổi trưa.", localHour: 13, localMinute: 0 },
+              { type: "water", title: "💧 Uống nước", message: "Uống thêm nước buổi chiều nào!", localHour: 16, localMinute: 0 },
+              { type: "workout", title: "🏋️ Đến giờ tập rồi!", message: "Bắt đầu buổi tập của bạn hôm nay.", localHour: 18, localMinute: 0 },
+              { type: "meal", title: "🍽️ Nhắc bữa tối", message: "Đã đến giờ bữa tối, đừng bỏ bữa nhé!", localHour: 19, localMinute: 0 },
+            ];
+            for (const r of defaultReminders) {
+              await fetchApi('/reminders', {
+                method: 'POST',
+                body: JSON.stringify({ ...r, timezone, isEnabled: true })
+              });
+            }
+
+            // 5. Đăng ký Expo Push Token (Bỏ qua trên Expo Go từ SDK 53+)
+            // Do remote notifications không còn được hỗ trợ trong Expo Go từ SDK 53, việc require("expo-notifications")
+            // sẽ kích hoạt side-effects toàn cục gây lỗi crash khi khởi động Metro.
+            console.log("Push token registration skipped in Expo Go (remote notifications not supported since SDK 53)");
+
+            useAuthStore.getState().completeOnboarding();
+            navigation.replace("MainTabs");
+          } catch (e) {
+            console.log('Lỗi lưu onboarding:', e);
+            useAuthStore.getState().completeOnboarding();
+            navigation.replace("MainTabs");
+          }
+        }} />
       </View>
     </Module01Layout>
   );

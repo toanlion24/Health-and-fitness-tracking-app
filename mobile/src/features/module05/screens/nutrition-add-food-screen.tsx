@@ -1,211 +1,178 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Module01Layout } from "../../module01/components/module01-layout";
 import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
-import type { FoodDef } from "../data/nutrition-demo";
-import { FOOD_CATALOG } from "../data/nutrition-demo";
 import type { NutritionStackScreenProps } from "../navigation/nutrition-stack-types";
-
-type Chip = "all" | "protein" | "lowcal";
-
-const CHIP_LABEL: Record<Chip, string> = {
-  all: "All",
-  protein: "High protein",
-  lowcal: "Low cal",
-};
+import { useNutritionApiStore, getMealLogsByType } from "../store/nutrition-api-store";
+import type { MealType, FoodItem } from "../store/nutrition-api-store";
 
 export function NutritionAddFoodScreen({ navigation, route }: NutritionStackScreenProps<"AddFood">): ReactElement {
-  const presetMeal = route.params?.presetMeal;
+  const presetMeal = (route.params?.presetMeal ?? "breakfast") as MealType;
   const [query, setQuery] = useState("");
-  const [chip, setChip] = useState<Chip>("all");
-  const [loading, setLoading] = useState(false);
+  const [adding, setAdding] = useState<number | null>(null); // foodId đang được thêm
 
-  const filtered = useMemo(() => {
-    let list = FOOD_CATALOG;
-    if (chip === "protein") list = list.filter((f) => f.filter === "protein");
-    if (chip === "lowcal") list = list.filter((f) => f.filter === "lowcal");
-    const q = query.trim().toLowerCase();
-    if (q.length > 0) list = list.filter((f) => f.name.toLowerCase().includes(q));
-    return list;
-  }, [chip, query]);
+  const foods = useNutritionApiStore((s) => s.foods);
+  const loadingFoods = useNutritionApiStore((s) => s.loadingFoods);
+  const fetchFoods = useNutritionApiStore((s) => s.fetchFoods);
+  const mealLogs = useNutritionApiStore((s) => s.mealLogs);
+  const createMealLog = useNutritionApiStore((s) => s.createMealLog);
+  const addFoodToMeal = useNutritionApiStore((s) => s.addFoodToMeal);
 
-  const onSearchChange = (text: string): void => {
-    setQuery(text);
-    if (text.trim().length > 0) {
-      setLoading(true);
-      setTimeout(() => setLoading(false), 350);
+  // Debounce search
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+    const timer = setTimeout(() => {
+      void fetchFoods(query);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  const getMealLogId = async (): Promise<number | null> => {
+    const existingLogs = getMealLogsByType(mealLogs, presetMeal);
+    if (existingLogs.length > 0) return existingLogs[0]!.id;
+    // Tạo meal log mới
+    return createMealLog(presetMeal);
+  };
+
+  const handleAddFood = async (food: FoodItem): Promise<void> => {
+    setAdding(food.id);
+    try {
+      const mealLogId = await getMealLogId();
+      if (!mealLogId) {
+        Alert.alert("Error", "Could not create meal log");
+        return;
+      }
+      await addFoodToMeal(mealLogId, food, 1);
+      Alert.alert("✅ Added", `${food.name} added to ${presetMeal}!`, [
+        { text: "Continue", style: "cancel" },
+        { text: "Done", onPress: () => navigation.goBack() },
+      ]);
+    } catch (e) {
+      Alert.alert("Error", "Could not add food");
+    } finally {
+      setAdding(null);
     }
   };
 
-  const openFood = (food: FoodDef): void => {
-    navigation.navigate("FoodDetail", { foodId: food.id, targetMeal: presetMeal });
-  };
+  const mealLabel = presetMeal.charAt(0).toUpperCase() + presetMeal.slice(1);
 
   return (
     <Module01Layout variant="onboardingMint" contentInset={[12, 20, 28, 20]} scrollable={false} keyboardAvoiding keyboardVerticalOffset={0}>
       <View style={{ flex: 1, gap: 14 }}>
+        {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            style={backBtn}
-          >
+          <Pressable onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back" style={backBtn}>
             <MaterialCommunityIcons name="chevron-left" size={24} color={colors.slate900} />
           </Pressable>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 22, color: colors.slate900, flex: 1 }}>Add food</Text>
-          <Pressable
-            onPress={() => navigation.navigate("BarcodeScan")}
-            accessibilityRole="button"
-            accessibilityLabel="Scan barcode"
-            style={backBtn}
-          >
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: font.extrabold, fontSize: 22, color: colors.slate900 }}>Add food</Text>
+            <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate500 }}>to {mealLabel}</Text>
+          </View>
+          <Pressable onPress={() => navigation.navigate("BarcodeScan")} accessibilityRole="button" accessibilityLabel="Scan barcode" style={backBtn}>
             <MaterialCommunityIcons name="barcode-scan" size={22} color={colors.slate900} />
           </Pressable>
         </View>
 
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            borderRadius: radii.input,
-            borderWidth: 1,
-            borderColor: colors.slate200,
-            backgroundColor: colors.white,
-            paddingHorizontal: 14,
-            minHeight: touch.inputMinHeight,
-            ...iosCardShadow,
-          }}
-        >
+        {/* Search box */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, borderRadius: radii.input, borderWidth: 1, borderColor: colors.slate200, backgroundColor: colors.white, paddingHorizontal: 14, minHeight: touch.inputMinHeight, ...iosCardShadow }}>
           <MaterialCommunityIcons name="magnify" size={22} color={colors.slate400} />
           <TextInput
             value={query}
-            onChangeText={onSearchChange}
-            placeholder="Search foods…"
+            onChangeText={setQuery}
+            placeholder="Search foods (e.g. chicken breast)..."
             placeholderTextColor={colors.slate400}
             style={{ flex: 1, fontFamily: font.medium, fontSize: 16, color: colors.slate900, paddingVertical: 12 }}
             accessibilityLabel="Search foods"
           />
+          {loadingFoods && <ActivityIndicator color={colors.emerald600} />}
         </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.chipScroll}
-          contentContainerStyle={styles.chipScrollContent}
-        >
-          {(Object.keys(CHIP_LABEL) as Chip[]).map((key) => {
-            const active = chip === key;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => setChip(key)}
-                accessibilityRole="button"
-                accessibilityState={{ selected: active }}
-                style={({ pressed }) => ({
-                  paddingVertical: 8,
-                  paddingHorizontal: 14,
-                  borderRadius: 999,
-                  backgroundColor: active ? colors.emerald600 : colors.white,
-                  borderWidth: 1,
-                  borderColor: active ? colors.emerald600 : colors.slate200,
-                  alignSelf: "center",
-                  opacity: pressed ? 0.9 : 1,
-                })}
-              >
-                <Text
-                  style={{
-                    fontFamily: font.semibold,
-                    fontSize: 13,
-                    color: active ? colors.white : colors.slate700,
-                  }}
-                >
-                  {CHIP_LABEL[key]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate500 }}>Suggested</Text>
-
-        {loading ? (
-          <View style={{ paddingVertical: 40, alignItems: "center" }}>
-            <ActivityIndicator color={colors.emerald600} />
-            <Text style={{ fontFamily: font.medium, fontSize: 14, color: colors.slate500, marginTop: 12 }}>Searching…</Text>
-          </View>
-        ) : filtered.length === 0 ? (
-          <View style={{ paddingVertical: 32, alignItems: "center", gap: 8 }}>
-            <MaterialCommunityIcons name="food-off-outline" size={40} color={colors.slate400} />
-            <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate700 }}>No matches</Text>
-            <Text style={{ fontFamily: font.medium, fontSize: 14, color: colors.slate500, textAlign: "center" }}>
-              Try another search or filter.
+        {/* Hint */}
+        {query.trim().length === 0 && (
+          <View style={{ alignItems: "center", gap: 10, paddingTop: 32 }}>
+            <MaterialCommunityIcons name="food-variant" size={48} color={colors.slate300} />
+            <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate400, textAlign: "center" }}>
+              Type to search from thousands of foods.{"\n"}Powered by Edamam Nutrition.
             </Text>
           </View>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
-            {filtered.map((food) => (
-              <Pressable
-                key={food.id}
-                onPress={() => openFood(food)}
-                accessibilityRole="button"
-                accessibilityLabel={`${food.name}, ${food.kcal} calories`}
-                style={({ pressed }) => [
-                  {
-                    borderRadius: radii.cardMd,
-                    borderWidth: StyleSheet.hairlineWidth,
-                    borderColor: colors.slate200,
-                    backgroundColor: colors.white,
-                    padding: 14,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 12,
-                    opacity: pressed ? 0.94 : 1,
-                    ...iosCardShadow,
-                  },
-                ]}
-              >
-                <View
-                  style={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: 14,
-                    backgroundColor: "#ECFDF5",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <MaterialCommunityIcons name="food-apple" size={24} color={colors.emerald600} />
-                </View>
-                <View style={{ flex: 1, gap: 4 }}>
-                  <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate900 }}>{food.name}</Text>
-                  <Text style={{ fontFamily: font.medium, fontSize: 13, color: colors.slate500 }}>{food.serving}</Text>
-                </View>
-                <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{food.kcal} kcal</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+        )}
+
+        {/* Results */}
+        {query.trim().length >= 2 && !loadingFoods && foods.length === 0 && (
+          <View style={{ paddingVertical: 32, alignItems: "center", gap: 8 }}>
+            <MaterialCommunityIcons name="food-off-outline" size={40} color={colors.slate400} />
+            <Text style={{ fontFamily: font.bold, fontSize: 16, color: colors.slate700 }}>No results found</Text>
+            <Text style={{ fontFamily: font.medium, fontSize: 13, color: colors.slate500, textAlign: "center" }}>
+              Try a different search term
+            </Text>
+          </View>
+        )}
+
+        {foods.length > 0 && (
+          <>
+            <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate500 }}>
+              {foods.length} result{foods.length !== 1 ? "s" : ""}
+            </Text>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
+              {foods.map((food) => (
+                <FoodRow key={food.id} food={food} adding={adding === food.id} onAdd={() => void handleAddFood(food)} />
+              ))}
+            </ScrollView>
+          </>
         )}
       </View>
     </Module01Layout>
   );
 }
 
-const styles = StyleSheet.create({
-  /** Horizontal `ScrollView` in a `flex:1` column otherwise stretches children to its full height (tall “pill” chips). */
-  chipScroll: {
-    flexGrow: 0,
-  },
-  chipScrollContent: {
-    gap: 8,
-    paddingBottom: 4,
-    alignItems: "center",
-  },
-});
+function FoodRow(props: { food: FoodItem; adding: boolean; onAdd: () => void }): ReactElement {
+  const { food, adding, onAdd } = props;
+  return (
+    <View style={{ borderRadius: radii.cardMd, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.slate200, backgroundColor: colors.white, padding: 14, flexDirection: "row", alignItems: "center", gap: 12, ...iosCardShadow }}>
+      <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: "#ECFDF5", alignItems: "center", justifyContent: "center" }}>
+        <MaterialCommunityIcons name="food-apple" size={24} color={colors.emerald600} />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{food.name}</Text>
+        <Text style={{ fontFamily: font.medium, fontSize: 12, color: colors.slate500 }}>
+          {food.servingUnit ?? "1 serving"}
+        </Text>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#6366F1" }}>P {food.proteinG.toFixed(0)}g</Text>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#F59E0B" }}>C {food.carbG.toFixed(0)}g</Text>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#EF4444" }}>F {food.fatG.toFixed(0)}g</Text>
+        </View>
+      </View>
+      <View style={{ alignItems: "flex-end", gap: 6 }}>
+        <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{food.kcalPerServing} kcal</Text>
+        <Pressable
+          onPress={onAdd}
+          disabled={adding}
+          accessibilityRole="button"
+          accessibilityLabel={`Add ${food.name}`}
+          style={({ pressed }) => ({
+            opacity: pressed || adding ? 0.7 : 1,
+            width: 32,
+            height: 32,
+            borderRadius: 10,
+            backgroundColor: colors.emerald600,
+            alignItems: "center",
+            justifyContent: "center",
+          })}
+        >
+          {adding ? (
+            <ActivityIndicator size="small" color={colors.white} />
+          ) : (
+            <MaterialCommunityIcons name="plus" size={18} color={colors.white} />
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
 
 const backBtn = {
   width: touch.min,

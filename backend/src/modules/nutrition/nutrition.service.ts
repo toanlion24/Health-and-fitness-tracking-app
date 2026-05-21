@@ -23,16 +23,85 @@ export async function listFoods(
   userId: number,
   query: ListFoodsQuery,
 ): Promise<FoodDto[]> {
+  const q = query.q?.trim() || "";
   const take = query.limit ?? 50;
+
+  // 1. Nếu có từ khóa, gọi Edamam Food Database API để lấy dữ liệu thực tế
+  const appId = process.env.EDAMAM_APP_ID;
+  const appKey = process.env.EDAMAM_APP_KEY;
+
+  if (q.length > 0 && appId && appKey) {
+    try {
+      const url = `https://api.edamam.com/api/food-database/v2/parser?app_id=${encodeURIComponent(
+        appId,
+      )}&app_key=${encodeURIComponent(
+        appKey,
+      )}&ingr=${encodeURIComponent(q)}&nutrition-type=logging`;
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = (await response.json()) as {
+          hints?: Array<{
+            food: {
+              foodId: string;
+              label: string;
+              nutrients: {
+                ENERC_KCAL?: number;
+                PROCNT?: number;
+                FAT?: number;
+                CHOCDF?: number;
+              };
+              servingUnit?: string;
+            };
+          }>;
+        };
+
+        if (data.hints && data.hints.length > 0) {
+          for (const hint of data.hints) {
+            const { food } = hint;
+            // Kiểm tra xem đã có trong catalog chưa
+            const existing = await prisma.foodCatalog.findFirst({
+              where: {
+                name: {
+                  equals: food.label,
+                },
+              },
+            });
+
+            if (!existing) {
+              await prisma.foodCatalog.create({
+                data: {
+                  name: food.label,
+                  kcalPerServing: Math.round(food.nutrients.ENERC_KCAL ?? 0),
+                  proteinG: new Decimal((food.nutrients.PROCNT ?? 0).toFixed(2)),
+                  carbG: new Decimal((food.nutrients.CHOCDF ?? 0).toFixed(2)),
+                  fatG: new Decimal((food.nutrients.FAT ?? 0).toFixed(2)),
+                  servingUnit: "100g",
+                  userId: null,
+                },
+              });
+            }
+          }
+        }
+      } else {
+        console.warn(`Edamam API returned status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Edamam Nutrition API Error:", error);
+    }
+  }
+
+  // 2. Trả về kết quả từ database (bao gồm cả các món vừa được cache)
   const where: {
     OR: Array<{ userId: null } | { userId: number }>;
     name?: { contains: string };
   } = {
     OR: [{ userId: null }, { userId }],
   };
-  if (query.q && query.q.trim().length > 0) {
-    where.name = { contains: query.q.trim() };
+  if (q) {
+    where.name = { contains: q };
   }
+
   const rows = await prisma.foodCatalog.findMany({
     where,
     orderBy: { name: "asc" },

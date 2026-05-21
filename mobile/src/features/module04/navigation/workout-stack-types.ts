@@ -5,7 +5,7 @@ export type WorkoutPlayerPhase = "active" | "paused" | "completed";
 export type WorkoutStackParamList = {
   WorkoutList: undefined;
   WorkoutDetail: { exerciseId: string };
-  WorkoutPlayer: { exerciseId: string; phase?: WorkoutPlayerPhase };
+  WorkoutPlayer: { exerciseId: string | number; exerciseName: string; sessionDate: string; phase?: WorkoutPlayerPhase };
   WorkoutPlan: undefined;
 };
 

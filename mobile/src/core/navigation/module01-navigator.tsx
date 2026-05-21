@@ -1,4 +1,6 @@
 import type { ReactElement } from "react";
+import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { createStackNavigator, type StackNavigationOptions } from "@react-navigation/stack";
 import type { Module01StackParamList } from "./module01-types";
 import { LoginScreen } from "../../features/module01/screens/login-screen";
@@ -12,6 +14,7 @@ import { OnboardingActivityScreen } from "../../features/module01/screens/onboar
 import { OnboardingGoalScreen } from "../../features/module01/screens/onboarding-goal-screen";
 import { OnboardingResultScreen } from "../../features/module01/screens/onboarding-result-screen";
 import { MainTabNavigator } from "./main-tab-navigator";
+import { useAuthStore } from "../store/auth-store";
 
 const Stack = createStackNavigator<Module01StackParamList>();
 
@@ -24,8 +27,28 @@ const stackScreenOptions: StackNavigationOptions = {
 };
 
 export function Module01Navigator(): ReactElement {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  const status = useAuthStore((s) => s.status);
+  const user = useAuthStore((s) => s.user);
+  const needsOnboarding = useAuthStore((s) => s.needsOnboarding);
+
+  useEffect(() => {
+    void hydrate();
+  }, [hydrate]);
+
+  if (status === "loading") {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0F172A" }}>
+        <ActivityIndicator size="large" color="#10B981" />
+      </View>
+    );
+  }
+
+  // Xác định màn hình khởi đầu tối ưu tùy theo trạng thái phiên đăng nhập
+  const initialRoute = user ? (needsOnboarding ? "OnboardingGender" : "MainTabs") : "Login";
+
   return (
-    <Stack.Navigator initialRouteName="Login" screenOptions={stackScreenOptions}>
+    <Stack.Navigator initialRouteName={initialRoute} screenOptions={stackScreenOptions}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />

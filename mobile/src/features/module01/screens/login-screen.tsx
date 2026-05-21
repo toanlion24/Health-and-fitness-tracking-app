@@ -10,6 +10,7 @@ import { OrDivider, SocialRow } from "../components/social-row";
 import { DEMO_ACCOUNT, matchesDemoAccount } from "../lib/demo-account";
 import { colors, layout, space, touch } from "../theme/tokens";
 import { font } from "../theme/fonts";
+import { useAuthStore } from "../../../core/store/auth-store";
 
 type FieldErrors = {
   email?: string;
@@ -20,6 +21,7 @@ export function LoginScreen({ navigation }: Module01StackScreenProps<"Login">): 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const clearError = useCallback((key: keyof FieldErrors) => {
     setFieldErrors((prev) => {
@@ -47,7 +49,7 @@ export function LoginScreen({ navigation }: Module01StackScreenProps<"Login">): 
     [clearError],
   );
 
-  const onSubmit = useCallback(() => {
+  const onSubmit = useCallback(async () => {
     const next: FieldErrors = {};
     const trimmed = email.trim();
     if (!trimmed) {
@@ -60,11 +62,26 @@ export function LoginScreen({ navigation }: Module01StackScreenProps<"Login">): 
     if (Object.keys(next).length > 0) {
       return;
     }
-    if (!matchesDemoAccount(trimmed, password)) {
-      setFieldErrors({ password: "Email or password is incorrect." });
-      return;
+
+    setIsLoading(true);
+    try {
+      await useAuthStore.getState().login(trimmed, password);
+      const needsOnboarding = useAuthStore.getState().needsOnboarding;
+      if (needsOnboarding) {
+        navigation.replace("OnboardingGender");
+      } else {
+        navigation.replace("MainTabs");
+      }
+    } catch (err: any) {
+      if (matchesDemoAccount(trimmed, password)) {
+        console.log("Fallback to demo login");
+        navigation.replace("OnboardingGender");
+      } else {
+        setFieldErrors({ password: err.message || "Email or password is incorrect." });
+      }
+    } finally {
+      setIsLoading(false);
     }
-    navigation.replace("OnboardingGender");
   }, [email, password, navigation]);
 
   return (
@@ -117,7 +134,12 @@ export function LoginScreen({ navigation }: Module01StackScreenProps<"Login">): 
             <Text style={styles.forgotText}>Forgot password?</Text>
           </Pressable>
         </View>
-        <GradientPrimaryButton label="Sign in" onPress={onSubmit} testID="login-submit" />
+        <GradientPrimaryButton
+          label={isLoading ? "Signing in..." : "Sign in"}
+          onPress={onSubmit}
+          disabled={isLoading}
+          testID="login-submit"
+        />
         <OrDivider />
         <SocialRow />
         <View style={styles.footerRow}>

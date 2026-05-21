@@ -1,15 +1,54 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useState, useEffect } from "react";
 import { GradientPrimaryButton } from "../../module01/components/gradient-primary-button";
 import { Module01Layout } from "../../module01/components/module01-layout";
-import { useModule01Store } from "../../module01/store/module01-store";
+import { fetchApi } from "../../../core/lib/api";
+import { useAuthStore } from "../../../core/store/auth-store";
 import { colors, iosCardShadow, layout, radii } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
 import type { ProfileStackScreenProps } from "../navigation/profile-stack-types";
 
 export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProps<"EditProfile">): ReactElement {
-  const profile = useModule01Store();
+  const user = useAuthStore((s) => s.user);
+  
+  const [fullName, setFullName] = useState("");
+  const [age, setAge] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user && user.profile) {
+      setFullName(user.profile.fullName || "");
+      if (user.profile.dob) {
+        const birthYear = new Date(user.profile.dob).getFullYear();
+        const currentYear = new Date().getFullYear();
+        setAge(String(currentYear - birthYear));
+      }
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const dob = new Date();
+      dob.setFullYear(dob.getFullYear() - Number(age));
+      
+      await fetchApi('/users/me/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          fullName,
+          dob: dob.toISOString().split('T')[0],
+        })
+      });
+      // Optionally refresh user in store here if needed
+      navigation.goBack();
+    } catch (e) {
+      console.log('Lỗi cập nhật profile:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Module01Layout variant="onboardingMint" contentInset={layout.contentPadSettingsDetail} scrollable keyboardAvoiding>
@@ -40,7 +79,7 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
         >
           <Text style={{ fontFamily: font.bold, fontSize: 13, color: colors.slate700 }}>Display name</Text>
           <Text style={{ fontFamily: font.extrabold, fontSize: 24, letterSpacing: -0.4, color: colors.slate900 }}>
-            Your profile
+            {fullName || user?.email || "Your profile"}
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View
@@ -71,7 +110,8 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
           <View style={{ gap: 6 }}>
             <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>Name</Text>
             <TextInput
-              defaultValue="Your profile"
+              value={fullName}
+              onChangeText={setFullName}
               placeholder="Display name"
               placeholderTextColor={colors.slate400}
               style={{
@@ -90,7 +130,8 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
           <View style={{ gap: 6 }}>
             <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate500 }}>Age</Text>
             <TextInput
-              defaultValue={String(profile.age)}
+              value={age}
+              onChangeText={setAge}
               keyboardType="number-pad"
               placeholder="Age"
               placeholderTextColor={colors.slate400}
@@ -110,7 +151,11 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
         </View>
 
         <View style={{ flex: 1 }} />
-        <GradientPrimaryButton label="Save Profile" onPress={() => navigation.goBack()} height={56} />
+        <GradientPrimaryButton 
+          label={loading ? "Saving..." : "Save Profile"} 
+          onPress={handleSave} 
+          height={56} 
+        />
       </View>
     </Module01Layout>
   );

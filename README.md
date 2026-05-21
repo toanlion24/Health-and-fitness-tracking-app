@@ -96,6 +96,7 @@ See `backend/openapi/openapi.yaml`.
 
 ## Additional docs
 
+- **Hướng dẫn chạy ứng dụng (tiếng Việt - khuyên đọc):** [`HUONG_DAN_CHAY_APP.md`](HUONG_DAN_CHAY_APP.md)
 - **Chức năng & cài đặt (tiếng Việt):** [`docs/CHUC_NANG_VA_CAI_DAT.md`](docs/CHUC_NANG_VA_CAI_DAT.md)
 - Run guide: [`docs/run-project-guide.md`](docs/run-project-guide.md)
 

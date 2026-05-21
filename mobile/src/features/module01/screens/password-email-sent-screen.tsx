@@ -1,11 +1,16 @@
 import type { ReactElement } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import type { RouteProp } from "@react-navigation/native";
 import { useRoute } from "@react-navigation/native";
 import type { Module01StackParamList } from "../../../core/navigation/module01-types";
 import type { Module01StackScreenProps } from "../../../core/navigation/module01-types";
 import { AuthHero } from "../components/auth-fields";
+
+type PasswordEmailSentRouteProp = {
+  key: string;
+  name: "PasswordEmailSent";
+  params: Module01StackParamList["PasswordEmailSent"];
+};
 import { GradientPrimaryButton } from "../components/gradient-primary-button";
 import { Module01Layout } from "../components/module01-layout";
 import { colors, layout, radii, space, touch } from "../theme/tokens";
@@ -14,7 +19,7 @@ import { font } from "../theme/fonts";
 export function PasswordEmailSentScreen({
   navigation,
 }: Module01StackScreenProps<"PasswordEmailSent">): ReactElement {
-  const route = useRoute<RouteProp<Module01StackParamList, "PasswordEmailSent">>();
+  const route = useRoute<PasswordEmailSentRouteProp>();
   const sentTo = route.params?.email;
 
   const onResend = (): void => {

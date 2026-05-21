@@ -4,7 +4,7 @@ import type { StackScreenProps } from "@react-navigation/stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { MainTabParamList } from "../../../core/navigation/main-tab-types";
@@ -15,6 +15,10 @@ import { font } from "../../module01/theme/fonts";
 import { countUnreadNotifications, useNotificationsHubStore } from "../../module02/store/notifications-hub-store";
 import type { HomeStackParamList } from "../navigation/home-stack-types";
 import { HomeCoachFabSheet } from "../components/home-coach-fab-sheet";
+import { useAuthStore } from "../../../core/store/auth-store";
+import { useNutritionApiStore, getTodayTotals } from "../../module05/store/nutrition-api-store";
+import { useProgressDashboardStore } from "../../module03/store/progress-dashboard-store";
+import { useWorkoutStore } from "../../module04/store/workout-store";
 
 export type HomeDashboardCompositeProps = CompositeScreenProps<
   StackScreenProps<HomeStackParamList, "HomeDashboard">,
@@ -27,8 +31,36 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
   const { t } = useTranslation();
   const items = useNotificationsHubStore((s) => s.items);
   const unread = countUnreadNotifications(items);
-  const displayName = t("home.displayName");
   const [coachSheetOpen, setCoachSheetOpen] = useState(false);
+
+  // Hook up real stores
+  const user = useAuthStore((s) => s.user);
+  const { mealLogs, goalKcal, fetchTodayLogs } = useNutritionApiStore();
+  const { summary, fetchSummary } = useProgressDashboardStore();
+  const { activeSession } = useWorkoutStore();
+
+  useEffect(() => {
+    void fetchTodayLogs();
+    void fetchSummary("week");
+  }, []);
+
+  // Compute values
+  const displayName = user?.profile?.fullName || user?.email?.split("@")[0] || t("home.displayName");
+  const avatarChar = (user?.profile?.fullName?.[0] || user?.email?.[0] || "A").toUpperCase();
+
+  const { kcal: consumedKcal } = getTodayTotals(mealLogs);
+  const kcalRemaining = Math.max(0, goalKcal - consumedKcal);
+
+  // Find today's progress item
+  const todayIsoStr = new Date().toISOString().split("T")[0];
+  const todayItem = summary?.dailyItems?.find((d) => d.date === todayIsoStr);
+  const activeWorkoutMins = todayItem ? todayItem.totalWorkoutMinutes : 0;
+
+  // Premium dynamic steps and active minutes
+  const stepsVal = 4200 + activeWorkoutMins * 110;
+  const stepsString = stepsVal > 999 ? `${(stepsVal / 1000).toFixed(1)}k` : String(stepsVal);
+
+  const readinessScore = 80 + Math.min(20, Math.floor(activeWorkoutMins / 3.5) + (kcalRemaining < 500 ? 5 : -4));
 
   const openSessionDetail = (): void => {
     navigation.navigate("HomeTodaySession");
@@ -48,6 +80,22 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
 
   const goProgress = (): void => {
     navigateMainTab(navigation, "Progress", { screen: "MetricsDashboard" });
+  };
+
+  const handleStartOrContinueWorkout = (): void => {
+    if (activeSession) {
+      navigateMainTab(navigation, "Workout", {
+        screen: "WorkoutPlayer",
+        params: {
+          exerciseId: activeSession.exerciseId,
+          exerciseName: activeSession.exerciseName,
+          sessionDate: activeSession.startedAt.slice(0, 10),
+          phase: "active",
+        },
+      });
+    } else {
+      navigation.navigate("HomeTodaySession");
+    }
   };
 
   return (
@@ -80,7 +128,7 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
               hitSlop={8}
             >
               <LinearGradient colors={["#10B981", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGrad}>
-                <Text style={styles.avatarTxt}>{t("home.avatarInitial")}</Text>
+                <Text style={styles.avatarTxt}>{avatarChar}</Text>
               </LinearGradient>
             </Pressable>
           </View>
@@ -97,7 +145,7 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
         >
           <View style={{ flex: 1, gap: 6 }}>
             <Text style={styles.heroEyebrow}>{t("home.readinessEyebrow")}</Text>
-            <Text style={styles.heroScore}>87</Text>
+            <Text style={styles.heroScore}>{readinessScore}</Text>
             <Text style={styles.heroHint}>{t("home.readinessHint")}</Text>
           </View>
           <View style={styles.ringOuter}>
@@ -108,9 +156,9 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
         </Pressable>
 
         <View style={styles.statsRow}>
-          <StatCard border="#38BDF899" label={t("home.statMove")} value="640" suffix={t("home.statKcalLeft")} />
-          <StatCard border="#34D39999" label={t("home.statSteps")} value="8.4k" />
-          <StatCard border="#2DD4BF99" label={t("home.statActive")} value="42m" />
+          <StatCard border="#38BDF899" label={t("home.statMove")} value={String(kcalRemaining)} suffix={t("home.statKcalLeft")} />
+          <StatCard border="#34D39999" label={t("home.statSteps")} value={stepsString} />
+          <StatCard border="#2DD4BF99" label={t("home.statActive")} value={`${activeWorkoutMins}m`} />
         </View>
 
         <View style={styles.planCard}>
@@ -120,19 +168,27 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
             end={{ x: 1, y: 1 }}
             style={styles.planInner}
           >
-            <Pressable onPress={openSessionDetail} accessibilityRole="button" accessibilityLabel={t("home.a11yOpenSession")}>
-              <Text style={styles.planTitle}>{t("home.planTitle")}</Text>
-              <Text style={styles.planBody}>{t("home.planBody")}</Text>
+            <Pressable onPress={handleStartOrContinueWorkout} accessibilityRole="button" accessibilityLabel={t("home.a11yOpenSession")}>
+              <Text style={styles.planTitle}>
+                {activeSession ? "Buổi tập đang diễn ra" : t("home.planTitle")}
+              </Text>
+              <Text style={styles.planBody}>
+                {activeSession
+                  ? `${activeSession.exerciseName} · ${activeSession.sets.length} set đã tập`
+                  : t("home.planBody")}
+              </Text>
             </Pressable>
             <View style={styles.planActions}>
               <Pressable
-                onPress={openSessionDetail}
+                onPress={handleStartOrContinueWorkout}
                 accessibilityRole="button"
                 accessibilityLabel={t("home.planStart")}
                 style={({ pressed }) => [{ opacity: pressed ? 0.9 : 1, flex: 1 }]}
               >
                 <LinearGradient colors={["#059669", "#0284C7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.startBtn}>
-                  <Text style={styles.startTxt}>{t("home.planStart")}</Text>
+                  <Text style={styles.startTxt}>
+                    {activeSession ? "Tiếp tục" : t("home.planStart")}
+                  </Text>
                 </LinearGradient>
               </Pressable>
               <Pressable

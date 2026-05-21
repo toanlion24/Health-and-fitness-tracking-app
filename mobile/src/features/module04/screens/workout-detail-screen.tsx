@@ -35,7 +35,12 @@ export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenPro
   const lc = LEVEL_CHIP[exercise.level];
 
   const start = (): void => {
-    navigation.navigate("WorkoutPlayer", { exerciseId: exercise.id, phase: "active" });
+    navigation.navigate("WorkoutPlayer", {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      sessionDate: new Date().toISOString().split("T")[0],
+      phase: "active",
+    });
   };
 
   return (

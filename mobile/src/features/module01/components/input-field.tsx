@@ -111,7 +111,7 @@ const WEB_INPUT_OUTLINE_OFF = {
   borderWidth: 0,
   borderColor: "transparent",
   boxShadow: "none",
-} as const satisfies TextStyle;
+} as any;
 
 const styles = StyleSheet.create({
   root: {

@@ -1,5 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Module01Layout } from "../../module01/components/module01-layout";
 import {
@@ -10,6 +11,7 @@ import {
   ProgressDashboardPartial,
   SummaryStatRow,
   WeightTrendCard,
+  WorkoutMinutesCard,
 } from "../components/progress-dashboard-widgets";
 import { useProgressDashboardStore } from "../store/progress-dashboard-store";
 import { colors, layout } from "../../module01/theme/tokens";
@@ -20,6 +22,13 @@ export function MetricsDashboardScreen({ navigation }: ProgressStackScreenProps<
   const phase = useProgressDashboardStore((s) => s.phase);
   const weekMonth = useProgressDashboardStore((s) => s.weekMonth);
   const setWeekMonth = useProgressDashboardStore((s) => s.setWeekMonth);
+  const summary = useProgressDashboardStore((s) => s.summary);
+  const fetchSummary = useProgressDashboardStore((s) => s.fetchSummary);
+
+  // Fetch khi màn hình mount
+  useEffect(() => {
+    void fetchSummary(weekMonth);
+  }, []);
 
   return (
     <Module01Layout variant="metricsDash" contentInset={layout.contentPadProgressMetrics} scrollable>
@@ -33,31 +42,37 @@ export function MetricsDashboardScreen({ navigation }: ProgressStackScreenProps<
             <ProgressDashboardEmpty onAddFirstLog={() => navigation.navigate("AddWeight")} />
           </View>
         ) : phase === "partial" ? (
-          <ProgressDashboardPartial />
+          <ProgressDashboardPartial summary={summary} />
         ) : (
           <>
-            <WeightTrendCard onPress={() => navigation.navigate("WeightDetail")} />
-            <CaloriesWeekCard onPress={() => navigation.navigate("CaloriesDetail")} />
-            <SummaryStatRow />
+            {/* Biểu đồ Calo — CHÍNH, hiển thị đầu tiên */}
+            <CaloriesWeekCard
+              items={summary?.dailyItems}
+              onPress={() => navigation.navigate("CaloriesDetail")}
+            />
 
-            <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate600 }}>Tap charts to explore details</Text>
+            {/* Biểu đồ Cân nặng */}
+            <WeightTrendCard
+              series={summary?.weight.series}
+              onPress={() => navigation.navigate("WeightDetail")}
+            />
 
-            <Pressable
+            {/* Biểu đồ Thời gian tập */}
+            <WorkoutMinutesCard
+              items={summary?.dailyItems}
               onPress={() => navigation.navigate("ActivityDetail")}
-              accessibilityRole="button"
-              accessibilityLabel="Activity and steps detail"
-              style={({ pressed }) => ({
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 8,
-                paddingVertical: 12,
-                opacity: pressed ? 0.85 : 1,
-              })}
-            >
-              <MaterialCommunityIcons name="run" size={20} color={colors.cyan600} />
-              <Text style={{ fontFamily: font.semibold, fontSize: 14, color: colors.cyan600 }}>Activity & steps</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.cyan600} />
-            </Pressable>
+            />
+
+            {/* Tổng kết số liệu */}
+            <SummaryStatRow
+              currentKg={summary?.weight.currentKg}
+              changeKg={summary?.weight.changeKg}
+              avgKcal={summary?.averages.avgKcalIn}
+            />
+
+            <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate600 }}>
+              Tap charts to explore details
+            </Text>
 
             <Pressable
               onPress={() => navigation.navigate("HealthMetricsDetail")}

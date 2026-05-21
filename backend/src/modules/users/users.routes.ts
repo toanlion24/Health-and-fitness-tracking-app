@@ -18,6 +18,12 @@ export function createUsersRouter(): Router {
     usersController.patchProfile,
   );
   router.put(
+    "/me/profile",
+    requireAuth,
+    validateBody(updateProfileBodySchema),
+    usersController.patchProfile,
+  );
+  router.put(
     "/me/goals",
     requireAuth,
     validateBody(putGoalsBodySchema),

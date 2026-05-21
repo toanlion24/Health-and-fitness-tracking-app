@@ -1,27 +1,47 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import type { ReactElement } from "react";
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useState, useEffect } from "react";
+import { Pressable, StyleSheet, Text, View, ActivityIndicator } from "react-native";
 import { Module01Layout } from "../../module01/components/module01-layout";
 import { ProgressWeekMonthSegment } from "../components/progress-dashboard-widgets";
 import { colors, iosCardShadow, layout, radii } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
 import type { ProgressStackScreenProps } from "../navigation/progress-stack-types";
+import { useProgressDashboardStore } from "../store/progress-dashboard-store";
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-const CONSUMED_H = [56, 82, 74, 88, 70, 90, 68];
-const BURNED_H = [40, 52, 48, 56, 44, 58, 42];
+function getDayLabel(dateStr: string, period: "week" | "month"): string {
+  const date = new Date(dateStr);
+  if (period === "week") {
+    const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    return days[date.getDay()] ?? "";
+  }
+  return String(date.getDate());
+}
 
 export function CaloriesDetailScreen(_props: ProgressStackScreenProps<"CaloriesDetail">): ReactElement {
   const [wm, setWm] = useState<"week" | "month">("week");
-  const maxH = Math.max(...CONSUMED_H, ...BURNED_H);
+  
+  const { summary, fetchSummary, phase } = useProgressDashboardStore();
+
+  useEffect(() => {
+    void fetchSummary(wm);
+  }, [wm]);
+
+  const items = summary?.dailyItems ?? [];
+  const consumedVals = items.map((d) => d.totalKcalIn);
+  const burnedVals = items.map((d) => d.totalKcalOut);
+  const maxH = Math.max(100, ...consumedVals, ...burnedVals);
+  const isLoading = phase === "loading";
+
+  // Reversely sort for the list to display latest date first
+  const displayItems = [...items].reverse();
 
   return (
     <Module01Layout variant="metricsDash" contentInset={layout.contentPadProgressDetail} scrollable>
       <View style={{ width: "100%", gap: 18, flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-          <Text style={{ fontFamily: font.extrabold, fontSize: 26, color: colors.slate900 }}>Calories</Text>
+          <Text style={{ fontFamily: font.extrabold, fontSize: 26, color: colors.slate900 }}>Calo</Text>
           <ProgressWeekMonthSegment value={wm} onChange={setWm} />
         </View>
 
@@ -36,70 +56,100 @@ export function CaloriesDetailScreen(_props: ProgressStackScreenProps<"CaloriesD
             ...iosCardShadow,
           }}
         >
-          <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Calories consumed vs burned</Text>
-          <View
-            style={{
-              height: 160,
-              borderRadius: radii.cardMd,
-              backgroundColor: colors.slate100,
-              padding: 16,
-              flexDirection: "row",
-              alignItems: "flex-end",
-              gap: 10,
-            }}
-          >
-            {DAYS.map((_, i) => (
+          <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Calo hấp thụ vs đốt cháy</Text>
+          
+          {isLoading ? (
+            <View style={{ height: 160, justifyContent: "center", alignItems: "center" }}>
+              <ActivityIndicator color={colors.cyan600} size="large" />
+            </View>
+          ) : items.length === 0 ? (
+            <View style={{ height: 160, justifyContent: "center", alignItems: "center" }}>
+              <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.slate400 }}>
+                Chưa có dữ liệu cho khoảng thời gian này
+              </Text>
+            </View>
+          ) : (
+            <>
               <View
-                key={i}
                 style={{
-                  flex: 1,
+                  height: 160,
+                  borderRadius: radii.cardMd,
+                  backgroundColor: colors.slate100,
+                  padding: 16,
                   flexDirection: "row",
-                  justifyContent: "center",
                   alignItems: "flex-end",
-                  gap: 3,
-                  height: "100%",
+                  gap: wm === "month" ? 4 : 10,
                 }}
               >
-                <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                  <LinearGradient
-                    colors={["#0EA5E9", "#0284C7"]}
+                {items.map((item, i) => (
+                  <View
+                    key={`${item.date}-${i}`}
                     style={{
-                      width: "100%",
-                      height: Math.max(10, ((CONSUMED_H[i] ?? 0) / maxH) * 130),
-                      borderRadius: 6,
-                      opacity: 0.95,
+                      flex: 1,
+                      flexDirection: "row",
+                      justifyContent: "center",
+                      alignItems: "flex-end",
+                      gap: wm === "month" ? 1 : 3,
+                      height: "100%",
                     }}
-                  />
-                </View>
-                <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
-                  <LinearGradient
-                    colors={["#94A3B8", "#64748B"]}
-                    style={{
-                      width: "100%",
-                      height: Math.max(8, ((BURNED_H[i] ?? 0) / maxH) * 130),
-                      borderRadius: 6,
-                      opacity: 0.85,
-                    }}
-                  />
-                </View>
+                  >
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                      <LinearGradient
+                        colors={["#0EA5E9", "#0284C7"]}
+                        style={{
+                          width: "100%",
+                          height: Math.max(4, (item.totalKcalIn / maxH) * 130),
+                          borderRadius: 3,
+                          opacity: 0.95,
+                        }}
+                      />
+                    </View>
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
+                      <LinearGradient
+                        colors={["#E11D48", "#BE123C"]}
+                        style={{
+                          width: "100%",
+                          height: Math.max(3, (item.totalKcalOut / maxH) * 130),
+                          borderRadius: 3,
+                          opacity: 0.95,
+                        }}
+                      />
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-            {DAYS.map((d) => (
-              <Text key={d} style={{ fontFamily: font.regular, fontSize: 11, color: colors.slate400 }}>
-                {d}
-              </Text>
-            ))}
-          </View>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 2 }}>
+                {items.map((item, i) => {
+                  // Only show limited dates if on month layout to keep clean
+                  const showLabel = wm === "week" || i % 5 === 0 || i === items.length - 1;
+                  return (
+                    <Text
+                      key={`${item.date}-lbl-${i}`}
+                      style={{
+                        fontFamily: font.regular,
+                        fontSize: 10,
+                        color: colors.slate400,
+                        width: wm === "month" ? 22 : undefined,
+                        textAlign: "center",
+                        opacity: showLabel ? 1 : 0,
+                      }}
+                    >
+                      {getDayLabel(item.date, wm)}
+                    </Text>
+                  );
+                })}
+              </View>
+            </>
+          )}
+
           <View style={{ flexDirection: "row", gap: 16, paddingTop: 4 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.cyan600 }} />
-              <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate600 }}>Consumed</Text>
+              <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate600 }}>Nạp vào</Text>
             </View>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.slate500 }} />
-              <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate600 }}>Burned</Text>
+              <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#E11D48" }} />
+              <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate600 }}>Đốt cháy</Text>
             </View>
           </View>
         </View>
@@ -115,26 +165,46 @@ export function CaloriesDetailScreen(_props: ProgressStackScreenProps<"CaloriesD
             ...iosCardShadow,
           }}
         >
-          <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Daily breakdown</Text>
-          {["Today · 1,860 kcal", "Yesterday · 1,920 kcal", "Wed · 1,780 kcal"].map((line) => (
-            <Pressable
-              key={line}
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                paddingVertical: 10,
-                paddingHorizontal: 12,
-                borderRadius: radii.cardMd,
-                backgroundColor: colors.slate100,
-                borderWidth: StyleSheet.hairlineWidth,
-                borderColor: colors.slate200,
-              }}
-            >
-              <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.slate700 }}>{line}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={20} color={colors.slate400} />
-            </Pressable>
-          ))}
+          <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>Nhật ký hàng ngày</Text>
+          {isLoading ? (
+            <ActivityIndicator color={colors.cyan600} />
+          ) : displayItems.length === 0 ? (
+            <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.slate400, textAlign: "center", paddingVertical: 12 }}>
+              Không có dữ liệu
+            </Text>
+          ) : (
+            displayItems.map((item, i) => {
+              const formattedDate = new Date(item.date).toLocaleDateString("vi-VN", {
+                weekday: "short",
+                day: "numeric",
+                month: "numeric",
+              });
+              return (
+                <View
+                  key={`${item.date}-row-${i}`}
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    paddingHorizontal: 14,
+                    borderRadius: radii.cardMd,
+                    backgroundColor: colors.slate100,
+                    borderWidth: StyleSheet.hairlineWidth,
+                    borderColor: colors.slate200,
+                  }}
+                >
+                  <View style={{ gap: 4 }}>
+                    <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate800 }}>{formattedDate}</Text>
+                    <Text style={{ fontFamily: font.semibold, fontSize: 11, color: colors.slate500 }}>
+                      Nạp: {item.totalKcalIn.toLocaleString()} kcal | Tiêu: {item.totalKcalOut.toLocaleString()} kcal
+                    </Text>
+                  </View>
+                  <MaterialCommunityIcons name="circle-double" size={18} color={item.totalKcalIn > item.totalKcalOut ? colors.cyan600 : "#E11D48"} />
+                </View>
+              );
+            })
+          )}
         </View>
       </View>
     </Module01Layout>

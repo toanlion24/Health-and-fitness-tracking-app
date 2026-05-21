@@ -9,6 +9,7 @@ import { OrDivider, SocialRow } from "../components/social-row";
 import { PrimaryButton } from "../components/primary-button";
 import { colors, layout, space, touch } from "../theme/tokens";
 import { font } from "../theme/fonts";
+import { useAuthStore } from "../../../core/store/auth-store";
 
 type FieldErrors = {
   email?: string;
@@ -21,6 +22,7 @@ export function RegisterScreen({ navigation }: Module01StackScreenProps<"Registe
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const clearError = useCallback((key: keyof FieldErrors) => {
     setFieldErrors((prev) => {
@@ -74,12 +76,22 @@ export function RegisterScreen({ navigation }: Module01StackScreenProps<"Registe
     return Object.keys(next).length === 0;
   }, [email, password, confirm]);
 
-  const onSubmit = useCallback(() => {
+  const onSubmit = useCallback(async () => {
     if (!validate()) {
       return;
     }
-    navigation.replace("OnboardingGender");
-  }, [validate, navigation]);
+
+    setIsLoading(true);
+    try {
+      const trimmed = email.trim();
+      await useAuthStore.getState().register(trimmed, password);
+      navigation.replace("OnboardingGender");
+    } catch (err: any) {
+      setFieldErrors({ email: err.message || "Đăng ký thất bại. Email có thể đã được sử dụng." });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [validate, email, password, navigation]);
 
   return (
     <Module01Layout
@@ -136,7 +148,12 @@ export function RegisterScreen({ navigation }: Module01StackScreenProps<"Registe
           />
         </View>
 
-        <PrimaryButton label="Sign up" onPress={onSubmit} testID="register-submit" />
+        <PrimaryButton
+          label={isLoading ? "Signing up..." : "Sign up"}
+          onPress={onSubmit}
+          disabled={isLoading}
+          testID="register-submit"
+        />
 
         <OrDivider />
 
