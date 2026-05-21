@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { GradientPrimaryButton } from "../../module01/components/gradient-primary-button";
 import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens";
@@ -16,6 +16,7 @@ export function NutritionFoodDetailScreen({
   navigation,
   route,
 }: NutritionStackScreenProps<"FoodDetail">): ReactElement {
+  const insets = useSafeAreaInsets();
   const food = getFoodById(route.params.foodId);
   const targetMeal: MealSlot = route.params.targetMeal ?? "lunch";
   const [qty, setQty] = useState(1);
@@ -222,7 +223,7 @@ export function NutritionFoodDetailScreen({
           right: 0,
           bottom: 0,
           paddingHorizontal: 20,
-          paddingBottom: 24,
+          paddingBottom: Math.max(insets.bottom + 12, 24),
           paddingTop: 12,
           backgroundColor: colors.white,
           borderTopWidth: StyleSheet.hairlineWidth,

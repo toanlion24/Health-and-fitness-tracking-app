@@ -40,10 +40,8 @@ export function WorkoutPlayerScreen({
   const nextExercise = playlist[currentIndex + 1];
   const isLastExercise = currentIndex === totalExercises - 1;
 
-  // [DEV MODE] Hiện tại vẫn đang dùng giây để test cho nhanh
   const [timeLeft, setTimeLeft] = useState(exercise ? exercise.minutes * 60 : 0);
 
-  // 2. Khi có bài tập mới, tự động reset thời gian
   useEffect(() => {
     if (exercise) {
       setTimeLeft(exercise.minutes * 60); 
@@ -66,7 +64,6 @@ export function WorkoutPlayerScreen({
     return () => clearInterval(timer);
   }, [phase]);
 
-  // Tự động chuyển bài khi hết giờ
   useEffect(() => {
     if (timeLeft === 0 && phase === "active") {
       handleNextExercise();
@@ -86,12 +83,10 @@ export function WorkoutPlayerScreen({
       setPhase("completed");
     } else {
       setCurrentIndex((prev) => prev + 1);
-      // 👉 Chuyển sang bài mới cũng sẽ ở trạng thái chờ người dùng bấm Play
       setPhase("paused");
     }
   };
   
-  // 👉 3. Hàm Reset thời gian về lại mốc ban đầu của bài tập
   const handleReset = () => {
     if (exercise) {
       setTimeLeft(exercise.minutes * 60);
@@ -102,7 +97,6 @@ export function WorkoutPlayerScreen({
     navigation.popToTop();
   };
 
-  // Biến cờ kiểm tra xem bài tập đã bắt đầu chưa (để thay đổi chữ hiển thị)
   const isNotStarted = timeLeft === exercise.minutes * 60;
 
   return (
@@ -168,7 +162,6 @@ export function WorkoutPlayerScreen({
                 </Text>
               </View>
 
-              {/* Gắn Nút Reset & Nút Pause nằm cạnh nhau */}
               <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 12, width: "100%" }}>
                 <Pressable
                   onPress={handleReset}
@@ -193,7 +186,6 @@ export function WorkoutPlayerScreen({
                 {formatTime(timeLeft)}
               </Text>
               
-              {/* Đổi text linh hoạt nếu chưa bắt đầu */}
               <Text style={{ fontFamily: font.extrabold, fontSize: 12, color: "#F59E0B", marginTop: 6 }}>
                 {isNotStarted ? "Ready to start" : "Paused"}
               </Text>
@@ -219,7 +211,6 @@ export function WorkoutPlayerScreen({
                 </Text>
               </View>
 
-              {/* Gắn Nút Reset & Nút Play nằm cạnh nhau */}
               <View style={{ flexDirection: "row", gap: 12, marginBottom: 12, width: "100%" }}>
                 <Pressable
                   onPress={handleReset}

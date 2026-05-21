@@ -18,6 +18,7 @@ export function NutritionMealDetailScreen({ navigation, route }: NutritionStackS
   const meal = route.params.meal;
   const lines = useNutritionLogStore((s) => mealLines(s, meal));
   const total = useNutritionLogStore((s) => mealTotal(s, meal));
+  const removeFromMeal = useNutritionLogStore((s) => s.removeFromMeal);
 
   return (
     <Module01Layout variant="metricsDash" contentInset={[12, 20, 28, 20]} scrollable={false}>
@@ -75,7 +76,24 @@ export function NutritionMealDetailScreen({ navigation, route }: NutritionStackS
                       <Text style={{ fontFamily: font.medium, fontSize: 13, color: colors.slate500 }}>{line.sub}</Text>
                     ) : null}
                   </View>
-                  <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{line.kcal} kcal</Text>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                    <Text style={{ fontFamily: font.bold, fontSize: 15, color: colors.slate900 }}>{line.kcal} kcal</Text>
+                    
+                    <Pressable
+                      onPress={() => removeFromMeal(meal, line.id)}
+                      hitSlop={8}
+                      style={({ pressed }) => ({
+                        opacity: pressed ? 0.6 : 1,
+                        padding: 4,
+                        backgroundColor: "#FEE2E2",
+                        borderRadius: 8,
+                      })}
+                    >
+                      <MaterialCommunityIcons name="trash-can-outline" size={20} color="#DC2626" />
+                    </Pressable>
+                  </View>
+
                 </View>
               ))}
             </ScrollView>

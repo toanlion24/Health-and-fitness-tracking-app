@@ -13,6 +13,7 @@ type NutritionLogState = {
   setWaterL: (n: number) => void;
   bumpWater: (deltaL: number) => void;
   addToMeal: (meal: MealSlot, line: LoggedLine) => void;
+  removeFromMeal: (meal: MealSlot, lineId: string) => void;
   resetDay: () => void;
 };
 
@@ -53,6 +54,13 @@ export const useNutritionLogStore = create<NutritionLogState>((set, get) => ({
     const next = [...get()[key], line];
     set({ [key]: next } as Partial<NutritionLogState>);
   },
+  
+  removeFromMeal: (meal, lineId) => {
+    const key = meal === "breakfast" ? "breakfast" : meal === "lunch" ? "lunch" : "dinner";
+    const next = get()[key].filter((line) => line.id !== lineId);
+    set({ [key]: next } as Partial<NutritionLogState>);
+  },
+
   resetDay: () =>
     set({
       breakfast: defaultBreakfast,

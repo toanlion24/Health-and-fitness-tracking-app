@@ -1,6 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Module01Layout } from "../../module01/components/module01-layout";
@@ -43,9 +42,9 @@ export function NutritionDashboardScreen({
   const lunchTotal = useNutritionLogStore((s) => mealTotal(s, "lunch"));
   const dinnerTotal = useNutritionLogStore((s) => mealTotal(s, "dinner"));
 
-  useEffect(() => {
+  if (goalKcal !== goalFromProfile) {
     setGoalKcal(goalFromProfile);
-  }, [goalFromProfile, setGoalKcal]);
+  }
 
   const consumed = useNutritionLogStore((s) => consumedToday(s));
   const remaining = Math.max(0, goalKcal - consumed);
