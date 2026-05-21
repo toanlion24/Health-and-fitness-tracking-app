@@ -36,8 +36,15 @@ export function MetricsDashboardScreen({ navigation }: ProgressStackScreenProps<
           <ProgressDashboardPartial />
         ) : (
           <>
-            <WeightTrendCard onPress={() => navigation.navigate("WeightDetail")} />
-            <CaloriesWeekCard onPress={() => navigation.navigate("CaloriesDetail")} />
+            <WeightTrendCard 
+              period={weekMonth} 
+              onPress={() => navigation.navigate("WeightDetail")} 
+            />
+            
+            <CaloriesWeekCard 
+              period={weekMonth} 
+              onPress={() => navigation.navigate("CaloriesDetail")} 
+            />
             <SummaryStatRow />
 
             <Text style={{ fontFamily: font.bold, fontSize: 12, color: colors.slate600 }}>Tap charts to explore details</Text>

@@ -7,16 +7,23 @@ import { colors, iosCardShadow, radii } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
-
-/** Demo series aligned with `gui3.pen` Progress — Dashboard weight chart. */
 export const DEMO_WEIGHT_KG = [70.4, 70.5, 70.65, 70.85, 70.95, 71.05, 71.2];
-
-/** Bar heights (px at ~scale) — Calories card in pen. */
 export const DEMO_CAL_BAR_H = [42, 68, 58, 74, 64, 84, 56];
-
 export const DEMO_CAL_COLORS = ["#BFDBFE", "#7DD3FC", "#5EEAD4", "#22D3EE", "#38BDF8", "#10B981", "#93C5FD"] as const;
 
-type WeekMonth = "week" | "month";
+const MONTH_LABELS = ["1", "8", "15", "22", "30"] as const;
+export const DEMO_WEIGHT_KG_MONTH = [
+  73.2, 73.0, 72.8, 72.9, 72.5, 72.4, 72.6, 72.1, 72.0, 71.8, 
+  71.9, 71.5, 71.3, 71.4, 71.0, 70.8, 70.9, 70.5, 70.3, 70.4, 
+  70.0, 69.8, 69.9, 69.5, 69.3, 69.4, 69.0, 68.8, 68.9, 68.5
+];
+export const DEMO_CAL_BAR_H_MONTH = [
+  40, 50, 60, 45, 70, 65, 55, 42, 52, 62, 
+  47, 72, 67, 57, 44, 54, 64, 49, 74, 69, 
+  59, 46, 56, 66, 51, 76, 71, 61, 48, 58
+];
+
+export type WeekMonth = "week" | "month";
 
 export function ProgressDashboardHeader(props: {
   weekMonth: WeekMonth;
@@ -205,15 +212,20 @@ function LineSegments(props: {
 }
 
 export function WeightTrendCard(props: {
+  period?: WeekMonth;
   onPress?: () => void;
   title?: string;
   chartHeight?: number;
 }): ReactElement {
-  const { title = "Weight trend", chartHeight = 168 } = props;
+  const { period = "week", title = "Weight trend", chartHeight = 168 } = props;
   const [w, setW] = useState(0);
   const onLayout = (e: LayoutChangeEvent): void => {
     setW(e.nativeEvent.layout.width);
   };
+
+  const isWeek = period === "week";
+  const data = isWeek ? DEMO_WEIGHT_KG : DEMO_WEIGHT_KG_MONTH;
+  const labels = isWeek ? DAYS : MONTH_LABELS;
 
   const cardStyle = {
     borderRadius: radii.card,
@@ -227,14 +239,16 @@ export function WeightTrendCard(props: {
 
   const body = (
     <>
-      <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>{title}</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>
+        {isWeek ? title : "Weight trend (30 Days)"}
+      </Text>
       <View style={{ height: chartHeight, borderRadius: radii.pill, backgroundColor: colors.slate100, overflow: "hidden" }} onLayout={onLayout}>
         <ChartGrid height={chartHeight} />
-        <LineSegments chartW={w} chartH={chartHeight} values={DEMO_WEIGHT_KG} />
+        <LineSegments chartW={w} chartH={chartHeight} values={data} />
       </View>
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-        {DAYS.map((d) => (
-          <Text key={d} style={{ fontFamily: font.regular, fontSize: 10, color: colors.slate400 }}>
+        {labels.map((d, index) => (
+          <Text key={index} style={{ fontFamily: font.regular, fontSize: 10, color: colors.slate400 }}>
             {d}
           </Text>
         ))}
@@ -258,8 +272,12 @@ export function WeightTrendCard(props: {
   return <View style={cardStyle}>{body}</View>;
 }
 
-export function CaloriesWeekCard(props: { onPress?: () => void }): ReactElement {
-  const maxH = Math.max(...DEMO_CAL_BAR_H);
+export function CaloriesWeekCard(props: { period?: WeekMonth; onPress?: () => void }): ReactElement {
+  const { period = "week" } = props;
+  const isWeek = period === "week";
+  
+  const data = isWeek ? DEMO_CAL_BAR_H : DEMO_CAL_BAR_H_MONTH;
+  const maxH = Math.max(...data);
   const barMax = 108;
   const cardStyle = {
     borderRadius: radii.card,
@@ -273,7 +291,9 @@ export function CaloriesWeekCard(props: { onPress?: () => void }): ReactElement 
 
   const inner = (
     <>
-      <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>Calories this week</Text>
+      <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate700 }}>
+        {isWeek ? "Calories this week" : "Calories this month"}
+      </Text>
       <View
         style={{
           height: 140,
@@ -282,19 +302,22 @@ export function CaloriesWeekCard(props: { onPress?: () => void }): ReactElement 
           padding: 14,
           flexDirection: "row",
           alignItems: "flex-end",
-          gap: 8,
+          gap: isWeek ? 8 : 2,
         }}
       >
-        {DEMO_CAL_BAR_H.map((h, i) => {
+        {data.map((h, i) => {
           const bh = Math.max(8, (h / maxH) * barMax);
+          const isLast = i === data.length - 1;
+          
+          const barColor = isLast
+            ? (["#10B981", "#0EA5E9"] as const)
+            : isWeek 
+              ? ([DEMO_CAL_COLORS[i] ?? "#93C5FD", DEMO_CAL_COLORS[i] ?? "#93C5FD"] as const)
+              : (["#BFDBFE", "#BFDBFE"] as const); 
           return (
             <View key={i} style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", height: "100%" }}>
               <LinearGradient
-                colors={
-                  i === 5
-                    ? (["#10B981", "#0EA5E9"] as const)
-                    : ([DEMO_CAL_COLORS[i] ?? "#93C5FD", DEMO_CAL_COLORS[i] ?? "#93C5FD"] as const)
-                }
+                colors={barColor}
                 style={{
                   width: "100%",
                   height: bh,
@@ -313,7 +336,7 @@ export function CaloriesWeekCard(props: { onPress?: () => void }): ReactElement 
       <Pressable
         onPress={props.onPress}
         accessibilityRole="button"
-        accessibilityLabel="Calories this week, open details"
+        accessibilityLabel="Calories, open details"
         style={({ pressed }) => [cardStyle, { opacity: pressed ? 0.92 : 1 }]}
       >
         {inner}
