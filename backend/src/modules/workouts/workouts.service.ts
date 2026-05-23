@@ -40,8 +40,7 @@ export async function listExercises(
     try {
       const url = new URL("https://wger.de/api/v2/exerciseinfo/");
       url.searchParams.append("language", "2"); // English
-      url.searchParams.append("limit", "10");
-      url.searchParams.append("name", q);
+      url.searchParams.append("limit", "150");
 
       const response = await fetch(url.toString(), {
         headers: { "Accept": "application/json" },

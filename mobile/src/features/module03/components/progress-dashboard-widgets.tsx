@@ -417,8 +417,8 @@ export function SummaryStatRow(props: {
 
   return (
     <View style={{ flexDirection: "row", gap: 10, opacity: muted ? 0.55 : 1 }}>
-      {stat("Current", currentKg != null ? `${currentKg.toFixed(1)} kg` : "--")}
-      {stat("Change", changeKg != null ? `${changeSign}${changeKg.toFixed(1)} kg` : "--", changeColor)}
+      {stat("Current", currentKg != null ? `${Number(currentKg).toFixed(1)} kg` : "--")}
+      {stat("Change", changeKg != null ? `${changeSign}${Number(changeKg).toFixed(1)} kg` : "--", changeColor)}
       {stat("Avg cal", avgKcal != null ? avgKcal.toLocaleString() : "--")}
     </View>
   );

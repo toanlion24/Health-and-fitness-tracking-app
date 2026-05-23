@@ -95,7 +95,7 @@ export function NutritionAddFoodScreen({ navigation, route }: NutritionStackScre
           <View style={{ alignItems: "center", gap: 10, paddingTop: 32 }}>
             <MaterialCommunityIcons name="food-variant" size={48} color={colors.slate300} />
             <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate400, textAlign: "center" }}>
-              Type to search from thousands of foods.{"\n"}Powered by Edamam Nutrition.
+              Type to search from thousands of foods.{"\n"}Powered by Open Food Facts.
             </Text>
           </View>
         )}
@@ -141,9 +141,9 @@ function FoodRow(props: { food: FoodItem; adding: boolean; onAdd: () => void }):
           {food.servingUnit ?? "1 serving"}
         </Text>
         <View style={{ flexDirection: "row", gap: 8, marginTop: 2 }}>
-          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#6366F1" }}>P {food.proteinG.toFixed(0)}g</Text>
-          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#F59E0B" }}>C {food.carbG.toFixed(0)}g</Text>
-          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#EF4444" }}>F {food.fatG.toFixed(0)}g</Text>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#6366F1" }}>P {Number(food.proteinG).toFixed(0)}g</Text>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#F59E0B" }}>C {Number(food.carbG).toFixed(0)}g</Text>
+          <Text style={{ fontFamily: font.semibold, fontSize: 11, color: "#EF4444" }}>F {Number(food.fatG).toFixed(0)}g</Text>
         </View>
       </View>
       <View style={{ alignItems: "flex-end", gap: 6 }}>

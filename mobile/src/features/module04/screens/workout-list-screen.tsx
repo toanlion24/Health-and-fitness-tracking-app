@@ -178,7 +178,7 @@ function ExerciseRow(props: { exercise: ExerciseItem; onPress: () => void }): Re
       </View>
       {exercise.met ? (
         <Text style={{ fontFamily: font.semibold, fontSize: 10, color: colors.slate400 }}>
-          🔥 MET {exercise.met.toFixed(1)} · Tap to begin session
+          🔥 MET {Number(exercise.met).toFixed(1)} · Tap to begin session
         </Text>
       ) : null}
     </Pressable>

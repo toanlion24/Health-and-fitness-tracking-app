@@ -244,7 +244,7 @@ export async function getSummaryProgress(
     totals: { totalKcalIn, totalKcalOut, totalWorkoutMinutes },
     averages: { avgKcalIn, avgWorkoutMins },
     weight: {
-      currentKg: latestWeight?.weightKg ?? null,
+      currentKg: latestWeight?.weightKg != null ? Number(latestWeight.weightKg) : null,
       changeKg:
         latestWeight?.weightKg && earliestWeight?.weightKg
           ? Number(latestWeight.weightKg) - Number(earliestWeight.weightKg)

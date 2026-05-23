@@ -106,8 +106,18 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
     try {
       const res = await fetchApi(`/nutrition/foods?q=${encodeURIComponent(query)}&limit=30`);
       if (res.ok) {
-        const data = (await res.json()) as FoodItem[];
-        set({ foods: data ?? [] });
+        const raw = (await res.json()) as any[];
+        // Backend sends proteinG/carbG/fatG as strings (Prisma Decimal), convert to numbers
+        const data: FoodItem[] = (raw ?? []).map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          kcalPerServing: Number(f.kcalPerServing),
+          proteinG: Number(f.proteinG),
+          carbG: Number(f.carbG),
+          fatG: Number(f.fatG),
+          servingUnit: f.servingUnit,
+        }));
+        set({ foods: data });
       }
     } catch (e) {
       console.error("fetchFoods error:", e);

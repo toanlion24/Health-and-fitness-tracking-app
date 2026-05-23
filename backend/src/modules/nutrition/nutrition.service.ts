@@ -26,68 +26,79 @@ export async function listFoods(
   const q = query.q?.trim() || "";
   const take = query.limit ?? 50;
 
-  // 1. Nếu có từ khóa, gọi Edamam Food Database API để lấy dữ liệu thực tế
-  const appId = process.env.EDAMAM_APP_ID;
-  const appKey = process.env.EDAMAM_APP_KEY;
-
-  if (q.length > 0 && appId && appKey) {
+  // 1. Nếu có từ khóa, gọi Open Food Facts API để lấy dữ liệu thực tế
+  if (q.length > 0) {
     try {
-      const url = `https://api.edamam.com/api/food-database/v2/parser?app_id=${encodeURIComponent(
-        appId,
-      )}&app_key=${encodeURIComponent(
-        appKey,
-      )}&ingr=${encodeURIComponent(q)}&nutrition-type=logging`;
+      const headers = {
+        "User-Agent": "StudentHealthTrackingApp/1.0 (pogasdace2005@gmail.com)",
+        "Accept": "application/json",
+      };
 
-      const response = await fetch(url);
+      // Helper to add small delay to avoid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Primary request
+      const primaryUrl = `https://world.openfoodfacts.org/api/v2/search?q=${encodeURIComponent(
+        q,
+      )}&fields=product_name,nutriments&page_size=10`;
+
+      let response = await fetch(primaryUrl, { headers });
+
+      // Fallback strategies if needed
+      if (!response.ok && response.status === 503) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        const fallbackUrl = `https://world.openfoodfacts.org/api/v2/search?search_terms=${encodeURIComponent(
+          q,
+        )}&fields=product_name,nutriments&page_size=10`;
+        response = await fetch(fallbackUrl, { headers });
+      }
+
       if (response.ok) {
         const data = (await response.json()) as {
-          hints?: Array<{
-            food: {
-              foodId: string;
-              label: string;
-              nutrients: {
-                ENERC_KCAL?: number;
-                PROCNT?: number;
-                FAT?: number;
-                CHOCDF?: number;
-              };
-              servingUnit?: string;
+          products?: Array<{
+            product_name?: string;
+            nutriments?: {
+              "energy-kcal_100g"?: number;
+              proteins_100g?: number;
+              protein_100g?: number;
+              carbohydrates_100g?: number;
+              fat_100g?: number;
             };
           }>;
         };
 
-        if (data.hints && data.hints.length > 0) {
-          for (const hint of data.hints) {
-            const { food } = hint;
-            // Kiểm tra xem đã có trong catalog chưa
-            const existing = await prisma.foodCatalog.findFirst({
-              where: {
-                name: {
-                  equals: food.label,
-                },
+        const products = data.products || [];
+
+        for (const prod of products) {
+          const name = prod.product_name || "Unknown Product";
+          // Kiểm tra xem đã có trong catalog chưa
+          const existing = await prisma.foodCatalog.findFirst({
+            where: {
+              name: {
+                equals: name,
+              },
+            },
+          });
+
+          if (!existing) {
+            await prisma.foodCatalog.create({
+              data: {
+                name,
+                kcalPerServing: Math.round(prod.nutriments?.["energy-kcal_100g"] ?? 0),
+                proteinG: new Decimal((prod.nutriments?.proteins_100g ?? prod.nutriments?.protein_100g ?? 0).toFixed(2)),
+                carbG: new Decimal((prod.nutriments?.carbohydrates_100g ?? 0).toFixed(2)),
+                fatG: new Decimal((prod.nutriments?.fat_100g ?? 0).toFixed(2)),
+                servingUnit: "100g",
+                userId: null,
               },
             });
-
-            if (!existing) {
-              await prisma.foodCatalog.create({
-                data: {
-                  name: food.label,
-                  kcalPerServing: Math.round(food.nutrients.ENERC_KCAL ?? 0),
-                  proteinG: new Decimal((food.nutrients.PROCNT ?? 0).toFixed(2)),
-                  carbG: new Decimal((food.nutrients.CHOCDF ?? 0).toFixed(2)),
-                  fatG: new Decimal((food.nutrients.FAT ?? 0).toFixed(2)),
-                  servingUnit: "100g",
-                  userId: null,
-                },
-              });
-            }
           }
         }
       } else {
-        console.warn(`Edamam API returned status ${response.status}: ${response.statusText}`);
+        console.warn(`Open Food Facts API returned status ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
-      console.error("Edamam Nutrition API Error:", error);
+      console.error("Open Food Facts API connection error:", error);
     }
   }
 
