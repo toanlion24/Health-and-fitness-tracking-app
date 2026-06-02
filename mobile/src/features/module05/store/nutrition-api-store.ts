@@ -79,7 +79,7 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
       const date = todayIso();
       const [logsRes, goalsRes] = await Promise.all([
         fetchApi(`/nutrition/meal-logs?date=${date}`),
-        fetchApi("/users/me/goals"),
+        fetchApi("/me/goals"),
       ]);
       if (logsRes.ok) {
         const data = await logsRes.json();

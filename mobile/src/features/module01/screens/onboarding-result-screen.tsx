@@ -171,7 +171,7 @@ export function OnboardingResultScreen({ navigation }: Module01StackScreenProps<
             dob.setFullYear(dob.getFullYear() - profile.age);
             
             // 1. Cập nhật Profile
-            await fetchApi('/users/me/profile', {
+            await fetchApi('/me/profile', {
               method: 'PATCH',
               body: JSON.stringify({
                 gender: profile.gender,
@@ -198,7 +198,7 @@ export function OnboardingResultScreen({ navigation }: Module01StackScreenProps<
             };
             const mappedGoalType = goalMapping[profile.goal] || "maintenance";
 
-            await fetchApi('/users/me/goals', {
+            await fetchApi('/me/goals', {
               method: 'PUT',
               body: JSON.stringify({
                 goalType: mappedGoalType,

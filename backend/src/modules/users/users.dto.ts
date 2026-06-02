@@ -14,6 +14,7 @@ export const updateProfileBodySchema = z.object({
   activityLevel: z.string().min(1).max(64).nullable().optional(),
   timezone: z.string().min(1).max(64).nullable().optional(),
   locale: z.string().min(2).max(16).nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
 });
 
 export const putGoalsBodySchema = z.object({

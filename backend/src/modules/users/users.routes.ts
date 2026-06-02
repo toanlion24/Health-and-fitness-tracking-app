@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../../shared/middleware/require-auth.js";
+import { uploadAvatar } from "../../shared/middleware/upload.middleware.js";
 import { validateBody } from "../../shared/middleware/validate.js";
 import * as usersController from "./users.controller.js";
 import {
@@ -34,6 +35,12 @@ export function createUsersRouter(): Router {
     requireAuth,
     validateBody(registerDeviceTokenBodySchema),
     usersController.postDeviceToken,
+  );
+  router.post(
+    "/me/avatar",
+    requireAuth,
+    uploadAvatar.single("avatar"),
+    usersController.postAvatar,
   );
   return router;
 }

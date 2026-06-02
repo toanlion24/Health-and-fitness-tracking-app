@@ -10,6 +10,7 @@ export type UserProfile = {
   weightKg: number | null;
   goalType: string | null;
   activityLevel: string | null;
+  avatarUrl: string | null;
 };
 
 export type User = {
@@ -42,7 +43,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const accessToken = await SecureStore.getItemAsync('accessToken');
       if (accessToken) {
         // Có token, fetch profile để xác nhận
-        const res = await fetchApi('/users/me');
+    const res = await fetchApi('/me');
         if (res.ok) {
           const data = await res.json();
           // Kiểm tra xem đã có profile đầy đủ chưa (onboarding check)
@@ -94,7 +95,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
     
     // Kiểm tra onboarding state bằng fetch /users/me
-    const meRes = await fetchApi('/users/me');
+    const meRes = await fetchApi('/me');
     let needsOnboarding = false;
     if (meRes.ok) {
       const meData = await meRes.json();
@@ -120,7 +121,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
     await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
 
-    const meRes = await fetchApi('/users/me');
+    const meRes = await fetchApi('/me');
     let needsOnboarding = false;
     if (meRes.ok) {
       const meData = await meRes.json();
@@ -146,7 +147,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
     await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
 
-    const meRes = await fetchApi('/users/me');
+    const meRes = await fetchApi('/me');
     let needsOnboarding = false;
     if (meRes.ok) {
       const meData = await meRes.json();

@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import { getLogger } from "./shared/logger.js";
 import { requestIdMiddleware } from "./shared/middleware/request-id.js";
 import { errorHandlerMiddleware } from "./shared/middleware/error-handler.js";
@@ -20,9 +22,13 @@ export function createApp(): express.Express {
   const app = express();
   const logger = getLogger();
 
-  app.use(helmet());
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+
+  app.use(helmet({ crossOriginResourcePolicy: false })); // Allow cross origin resources (images)
   app.use(cors());
   app.use(express.json({ limit: "1mb" }));
+  app.use("/public", express.static(path.join(__dirname, "../public")));
   app.use(requestIdMiddleware);
   app.use((req, res, next) => {
     const started = Date.now();

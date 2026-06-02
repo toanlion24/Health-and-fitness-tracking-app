@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, ScrollView } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View, ScrollView, Image, Alert } from "react-native";
 import { useState, useEffect } from "react";
+import * as ImagePicker from "expo-image-picker";
 import { GradientPrimaryButton } from "../../module01/components/gradient-primary-button";
 import { Module01Layout } from "../../module01/components/module01-layout";
 import { fetchApi } from "../../../core/lib/api";
@@ -32,6 +33,7 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
   const [gender, setGender] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [activityLevel, setActivityLevel] = useState("");
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
       if (user.profile.gender) setGender(user.profile.gender);
       if (user.profile.heightCm) setHeightCm(String(user.profile.heightCm));
       if (user.profile.activityLevel) setActivityLevel(user.profile.activityLevel);
+      if (user.profile.avatarUrl) setAvatarUri(user.profile.avatarUrl);
     }
   }, [user]);
 
@@ -60,7 +63,7 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
         dobStr = dob.toISOString().split("T")[0];
       }
       
-      const res = await fetchApi("/users/me/profile", {
+      const res = await fetchApi("/me/profile", {
         method: "PATCH",
         body: JSON.stringify({
           fullName,
@@ -77,7 +80,7 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
       const updatedProfile = await res.json();
       
       // Fetch fresh full user object to ensure homescreen gets correct data
-      const meRes = await fetchApi("/users/me");
+      const meRes = await fetchApi("/me");
       if (meRes.ok) {
         const freshUser = await meRes.json();
         useAuthStore.getState().updateUser(freshUser);
@@ -94,6 +97,69 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
       console.log("Lỗi cập nhật profile:", e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "We need camera roll permissions to change your avatar.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      setAvatarUri(uri);
+      await uploadAvatar(uri);
+    }
+  };
+
+  const uploadAvatar = async (uri: string) => {
+    try {
+      const filename = uri.split("/").pop() || "avatar.jpg";
+      const match = /\.(\w+)$/.exec(filename);
+      const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+      const formData = new FormData();
+      // @ts-ignore
+      formData.append("avatar", {
+        uri,
+        name: filename,
+        type,
+      });
+
+      const res = await fetchApi("/me/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        console.log("Avatar upload failed:", await res.text());
+        Alert.alert("Error", "Failed to upload avatar");
+        return;
+      }
+      
+      const updatedProfile = await res.json();
+      
+      const meRes = await fetchApi("/me");
+      if (meRes.ok) {
+        useAuthStore.getState().updateUser(await meRes.json());
+      } else if (user) {
+        useAuthStore.getState().updateUser({
+          ...user,
+          profile: updatedProfile.id ? updatedProfile.profile : updatedProfile
+        });
+      }
+    } catch (err) {
+      console.log("Upload error", err);
+      Alert.alert("Error", "An error occurred while uploading avatar");
     }
   };
 
@@ -120,9 +186,13 @@ export function SettingsEditProfileScreen({ navigation }: ProfileStackScreenProp
           </Text>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <View style={styles.avatarHolder}>
-              <MaterialCommunityIcons name="account" size={28} color="#0F766E" />
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={{ width: 56, height: 56, borderRadius: 18 }} />
+              ) : (
+                <MaterialCommunityIcons name="account" size={28} color="#0F766E" />
+              )}
             </View>
-            <Pressable style={styles.changeBtn}>
+            <Pressable style={styles.changeBtn} onPress={handlePickImage}>
               <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate700 }}>Change photo</Text>
             </Pressable>
           </View>

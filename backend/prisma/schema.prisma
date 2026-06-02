@@ -285,7 +285,7 @@ model UserProfile {
   activityLevel String?   @map("activity_level") @db.VarChar(64)
   timezone      String?   @db.VarChar(64)
   locale        String?   @db.VarChar(16)
-
+  avatarUrl     String?   @map("avatar_url") @db.VarChar(512)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")

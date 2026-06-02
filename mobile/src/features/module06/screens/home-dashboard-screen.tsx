@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Image } from "react-native";
 import type { MainTabParamList } from "../../../core/navigation/main-tab-types";
 import { navigateMainTab } from "../../../core/navigation/navigate-main-tab";
 import { Module01Layout } from "../../module01/components/module01-layout";
@@ -138,9 +138,13 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
               accessibilityLabel={t("a11y.openProfileSettings")}
               hitSlop={8}
             >
-              <LinearGradient colors={["#10B981", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGrad}>
-                <Text style={styles.avatarTxt}>{avatarChar}</Text>
-              </LinearGradient>
+              {user?.profile?.avatarUrl ? (
+                <Image source={{ uri: user.profile.avatarUrl }} style={styles.avatarImg} />
+              ) : (
+                <LinearGradient colors={["#10B981", "#0EA5E9"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.avatarGrad}>
+                  <Text style={styles.avatarTxt}>{avatarChar}</Text>
+                </LinearGradient>
+              )}
             </Pressable>
           </View>
         </View>
@@ -338,6 +342,11 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+  },
+  avatarImg: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
   },
   avatarTxt: {
     fontFamily: font.extrabold,

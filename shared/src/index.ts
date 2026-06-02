@@ -51,6 +51,7 @@ export type UserProfileDto = {
   activityLevel: string | null;
   timezone: string | null;
   locale: string | null;
+  avatarUrl: string | null;
 };
 
 export type UserGoalDto = {
@@ -81,6 +82,7 @@ export type UpdateProfileBodyDto = {
   activityLevel?: string | null;
   timezone?: string | null;
   locale?: string | null;
+  avatarUrl?: string | null;
 };
 
 export type PutGoalsBodyDto = {
