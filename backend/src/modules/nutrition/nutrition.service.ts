@@ -23,6 +23,71 @@ export async function listFoods(
   userId: number,
   query: ListFoodsQuery,
 ): Promise<FoodDto[]> {
+  const q = query.q?.trim() ?? "";
+  const appId = process.env.EDAMAM_APP_ID;
+  const appKey = process.env.EDAMAM_APP_KEY;
+
+  if (q.length > 0 && appId && appKey) {
+    try {
+      const url = `https://api.edamam.com/api/food-database/v2/parser?app_id=${encodeURIComponent(
+        appId,
+      )}&app_key=${encodeURIComponent(
+        appKey,
+      )}&ingr=${encodeURIComponent(q)}&nutrition-type=logging`;
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = (await response.json()) as {
+          hints?: Array<{
+            food: {
+              foodId: string;
+              label: string;
+              nutrients: {
+                ENERC_KCAL?: number;
+                PROCNT?: number;
+                FAT?: number;
+                CHOCDF?: number;
+              };
+              servingUnit?: string;
+            };
+          }>;
+        };
+
+        if (data.hints && data.hints.length > 0) {
+          for (const hint of data.hints) {
+            const { food } = hint;
+            // Check if item already exists in local catalog to avoid duplicates
+            const exists = await prisma.foodCatalog.findFirst({
+              where: {
+                name: {
+                  equals: food.label,
+                },
+              },
+            });
+
+            if (!exists) {
+              await prisma.foodCatalog.create({
+                data: {
+                  name: food.label,
+                  kcalPerServing: Math.round(food.nutrients.ENERC_KCAL ?? 0),
+                  proteinG: new Decimal((food.nutrients.PROCNT ?? 0).toFixed(2)),
+                  carbG: new Decimal((food.nutrients.CHOCDF ?? 0).toFixed(2)),
+                  fatG: new Decimal((food.nutrients.FAT ?? 0).toFixed(2)),
+                  servingUnit: "100g",
+                  userId: null,
+                },
+              });
+            }
+          }
+        }
+      } else {
+        console.warn(`Edamam API returned status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("Failed to fetch foods from Edamam API, falling back to local search:", error);
+    }
+  }
+
   const take = query.limit ?? 50;
   const where: {
     OR: Array<{ userId: null } | { userId: number }>;
@@ -30,8 +95,8 @@ export async function listFoods(
   } = {
     OR: [{ userId: null }, { userId }],
   };
-  if (query.q && query.q.trim().length > 0) {
-    where.name = { contains: query.q.trim() };
+  if (q.length > 0) {
+    where.name = { contains: q };
   }
   const rows = await prisma.foodCatalog.findMany({
     where,
