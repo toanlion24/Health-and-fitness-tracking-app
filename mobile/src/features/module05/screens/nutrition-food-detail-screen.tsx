@@ -10,13 +10,49 @@ import { font } from "../../module01/theme/fonts";
 import { getFoodById } from "../data/nutrition-demo";
 import type { MealSlot } from "../data/nutrition-demo";
 import type { NutritionStackScreenProps } from "../navigation/nutrition-stack-types";
-import { useNutritionLogStore } from "../store/nutrition-log-store";
+import { useNutritionApiStore } from "../store/nutrition-api-store";
 
 export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackScreenProps<"FoodDetail">): ReactElement {
-  const food = getFoodById(route.params.foodId);
+  const foods = useNutritionApiStore((s) => s.foods);
+  const foodItem = foods.find((f) => String(f.id) === String(route.params.foodId));
+  
+  const { FOOD_CATALOG } = require("../data/nutrition-demo");
+  const staticFood = FOOD_CATALOG.find(
+    (f: any) =>
+      String(f.id) === String(route.params.foodId) ||
+      (foodItem && f.name.toLowerCase() === foodItem.name.toLowerCase())
+  );
+
+  const food = foodItem
+    ? {
+        id: String(foodItem.id),
+        name: foodItem.name,
+        kcal: foodItem.kcalPerServing,
+        serving: foodItem.servingUnit || "1 serving",
+        protein: `${foodItem.proteinG}g`,
+        carbs: `${foodItem.carbG}g`,
+        fat: `${foodItem.fatG}g`,
+        blurb: staticFood?.blurb || "No description available.",
+      }
+    : staticFood
+    ? {
+        id: staticFood.id,
+        name: staticFood.name,
+        kcal: staticFood.kcal,
+        serving: staticFood.serving,
+        protein: staticFood.protein,
+        carbs: staticFood.carbs,
+        fat: staticFood.fat,
+        blurb: staticFood.blurb,
+      }
+    : null;
+
   const targetMeal: MealSlot = route.params.targetMeal ?? "lunch";
   const [qty, setQty] = useState(1);
-  const addToMeal = useNutritionLogStore((s) => s.addToMeal);
+  
+  const addFoodToMeal = useNutritionApiStore((s) => s.addFoodToMeal);
+  const createMealLog = useNutritionApiStore((s) => s.createMealLog);
+  const mealLogs = useNutritionApiStore((s) => s.mealLogs);
 
   if (food == null) {
     return (
@@ -34,13 +70,32 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
 
   const totalKcal = Math.round(food.kcal * qty);
 
-  const confirm = (): void => {
-    addToMeal(targetMeal, {
-      id: `${food.id}-${Date.now()}`,
-      name: food.name,
-      kcal: totalKcal,
-      sub: `${qty}× ${food.serving} · ${food.protein} protein`,
-    });
+  const confirm = async (): Promise<void> => {
+    // Check if we have an existing log for today for this meal type
+    const existingLogs = mealLogs.filter((l) => l.mealType === targetMeal);
+    let mealLogId = existingLogs.length > 0 ? existingLogs[0]!.id : null;
+    
+    if (mealLogId == null) {
+      mealLogId = await createMealLog(targetMeal as any);
+    }
+    
+    if (mealLogId != null) {
+      if (foodItem) {
+        await addFoodToMeal(mealLogId, foodItem, qty);
+      } else {
+        const proteinNum = parseFloat(food.protein) || 0;
+        const carbNum = parseFloat(food.carbs) || 0;
+        const fatNum = parseFloat(food.fat) || 0;
+        await useNutritionApiStore.getState().addCustomFoodToMeal(
+          mealLogId,
+          food.name,
+          totalKcal,
+          proteinNum,
+          carbNum,
+          fatNum
+        );
+      }
+    }
     navigation.popToTop();
   };
 

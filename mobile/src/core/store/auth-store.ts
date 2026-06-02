@@ -25,8 +25,11 @@ export type AuthState = {
   hydrate: () => Promise<void>;
   register: (email: string, password: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
+  loginWithApple: (idToken: string) => Promise<void>;
   completeOnboarding: () => void;
   logout: () => void;
+  updateUser: (user: User) => void;
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -101,6 +104,59 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: data.user, needsOnboarding: false, status: "ready" });
     }
   },
+
+  loginWithGoogle: async (idToken: string) => {
+    const res = await fetchApi('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Lỗi đăng nhập Google');
+    }
+
+    const data = await res.json();
+    await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
+    await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
+
+    const meRes = await fetchApi('/users/me');
+    let needsOnboarding = false;
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      needsOnboarding = meData.profile?.gender == null;
+      set({ user: meData, needsOnboarding, status: "ready" });
+    } else {
+      set({ user: data.user, needsOnboarding: false, status: "ready" });
+    }
+  },
+
+  loginWithApple: async (idToken: string) => {
+    const res = await fetchApi('/auth/apple', {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'Lỗi đăng nhập Apple');
+    }
+
+    const data = await res.json();
+    await SecureStore.setItemAsync('accessToken', data.tokens.accessToken);
+    await SecureStore.setItemAsync('refreshToken', data.tokens.refreshToken);
+
+    const meRes = await fetchApi('/users/me');
+    let needsOnboarding = false;
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      needsOnboarding = meData.profile?.gender == null;
+      set({ user: meData, needsOnboarding, status: "ready" });
+    } else {
+      set({ user: data.user, needsOnboarding: false, status: "ready" });
+    }
+  },
+
   
   completeOnboarding: () => {
     set({ needsOnboarding: false });
@@ -121,5 +177,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     await SecureStore.deleteItemAsync('accessToken');
     await SecureStore.deleteItemAsync('refreshToken');
     set({ user: null, needsOnboarding: false, status: "ready" });
+  },
+  
+  updateUser: (user: User) => {
+    set({ user });
   },
 }));

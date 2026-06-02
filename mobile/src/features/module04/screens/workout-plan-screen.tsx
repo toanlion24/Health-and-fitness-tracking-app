@@ -17,7 +17,7 @@ const DAYS = [
   { id: "d7", label: "D7", sub: "Rest", active: false, rest: true },
 ];
 
-const DAY_EXERCISES = ["Push Up · 4 min", "Squat · 4 min", "Plank · 3 min", "Jumping Jack · 3 min"];
+const DAY_EXERCISES = ["Barbell Squat · 6 min", "Bench Press · 6 min", "Pull-up · 4 min", "Overhead Press · 4 min"];
 
 export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"WorkoutPlan">): ReactElement {
   return (
@@ -119,8 +119,8 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
         <Pressable
           onPress={() =>
             navigation.navigate("WorkoutPlayer", {
-              exerciseId: "push-up",
-              exerciseName: "Push Up",
+              exerciseId: "bench-press",
+              exerciseName: "Bench Press",
               sessionDate: new Date().toISOString().split("T")[0],
               phase: "active",
             })
@@ -128,7 +128,7 @@ export function WorkoutPlanScreen({ navigation }: WorkoutStackScreenProps<"Worko
           style={{ marginTop: 8 }}
         >
           <Text style={{ fontFamily: font.semibold, fontSize: 13, color: colors.cyan600 }}>
-            Jump into demo player (Push Up) →
+            Jump into demo player (Bench Press) →
           </Text>
         </Pressable>
       </View>

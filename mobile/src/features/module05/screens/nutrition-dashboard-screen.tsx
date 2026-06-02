@@ -1,6 +1,7 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Module01Layout } from "../../module01/components/module01-layout";
@@ -28,9 +29,11 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
   const fetchTodayLogs = useNutritionApiStore((s) => s.fetchTodayLogs);
   const createMealLog = useNutritionApiStore((s) => s.createMealLog);
 
-  useEffect(() => {
-    void fetchTodayLogs();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchTodayLogs();
+    }, [fetchTodayLogs])
+  );
 
   const totals = getTodayTotals(mealLogs);
   const consumed = totals.kcal;

@@ -5,7 +5,7 @@ const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
   }
-  return 'http://10.0.2.2:3000';
+  return 'http://192.168.51.243:3000';
 };
 
 export const API_URL = getApiUrl();

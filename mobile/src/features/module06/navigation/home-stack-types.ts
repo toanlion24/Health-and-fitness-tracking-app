@@ -6,6 +6,7 @@ export type HomeStackParamList = {
   HomeTodaySession: undefined;
   /** Tap readiness hero — score breakdown */
   HomeReadiness: undefined;
+  StepTracking: undefined;
 };
 
 export type HomeStackScreenProps<T extends keyof HomeStackParamList> = StackScreenProps<HomeStackParamList, T>;

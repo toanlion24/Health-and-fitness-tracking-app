@@ -82,8 +82,9 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
         fetchApi("/users/me/goals"),
       ]);
       if (logsRes.ok) {
-        const data = (await logsRes.json()) as { items: MealLog[] };
-        set({ mealLogs: data.items ?? [] });
+        const data = await logsRes.json();
+        const items = Array.isArray(data) ? data : (data?.items ?? []);
+        set({ mealLogs: items });
       }
       if (goalsRes.ok) {
         const goals = (await goalsRes.json()) as Array<{ dailyKcalTarget?: number | null }>;
@@ -98,13 +99,12 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
   },
 
   fetchFoods: async (query: string) => {
-    if (query.trim().length < 2) {
-      set({ foods: [] });
-      return;
-    }
     set({ loadingFoods: true });
     try {
-      const res = await fetchApi(`/nutrition/foods?q=${encodeURIComponent(query)}&limit=30`);
+      const url = query.trim().length > 0 
+        ? `/nutrition/foods?q=${encodeURIComponent(query)}&limit=30` 
+        : `/nutrition/foods?limit=50`;
+      const res = await fetchApi(url);
       if (res.ok) {
         const raw = (await res.json()) as any[];
         // Backend sends proteinG/carbG/fatG as strings (Prisma Decimal), convert to numbers
@@ -117,10 +117,40 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
           fatG: Number(f.fatG),
           servingUnit: f.servingUnit,
         }));
-        set({ foods: data });
+        if (data && data.length > 0) {
+          set({ foods: data, loadingFoods: false });
+          return;
+        }
       }
     } catch (e) {
       console.error("fetchFoods error:", e);
+    }
+
+    // Fallback to local data
+    try {
+      const { FOOD_CATALOG } = await import("../data/nutrition-demo");
+      const FOOD_MAP: Record<string, number> = {
+        rice: 1,
+        chicken: 2,
+        egg: 3,
+        banana: 4,
+      };
+      const filtered = query.trim().length > 0
+        ? FOOD_CATALOG.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()))
+        : FOOD_CATALOG;
+
+      const mapped = filtered.map((f) => ({
+        id: FOOD_MAP[f.id] ?? Math.floor(Math.random() * 1000) + 10,
+        name: f.name,
+        kcalPerServing: f.kcal,
+        proteinG: parseFloat(f.protein) || 0,
+        carbG: parseFloat(f.carbs) || 0,
+        fatG: parseFloat(f.fat) || 0,
+        servingUnit: f.serving,
+      }));
+      set({ foods: mapped });
+    } catch (fallbackError) {
+      console.error("Failed to load local foods fallback", fallbackError);
     } finally {
       set({ loadingFoods: false });
     }
@@ -200,9 +230,9 @@ export function getTodayTotals(logs: MealLog[]): { kcal: number; protein: number
   for (const log of logs) {
     for (const item of log.items) {
       kcal += item.kcal;
-      protein += item.proteinG;
-      carb += item.carbG;
-      fat += item.fatG;
+      protein += Number(item.proteinG) || 0;
+      carb += Number(item.carbG) || 0;
+      fat += Number(item.fatG) || 0;
     }
   }
   return { kcal, protein: Math.round(protein), carb: Math.round(carb), fat: Math.round(fat) };

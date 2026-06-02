@@ -19,30 +19,19 @@ const BG: Record<WorkoutPlayerPhase, [string, string]> = {
 export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenProps<"WorkoutPlayer">): ReactElement {
   const { exerciseId, exerciseName, sessionDate, phase: initialPhase } = route.params;
 
-  // ── Exercise‑ID handling ────────────────────────────────────────
   type ExerciseId =
-    | "push-up"
-    | "squat"
-    | "plank"
-    | "jumping-jack"
-    | "burpees"
-    | "mountain-climber"
-    | "lunges"
-    | "sit-up"
-    | "high-knees"
-    | "bicycle-crunch";
+    | "barbell-squat"
+    | "bench-press"
+    | "deadlift"
+    | "pull-up"
+    | "overhead-press";
 
   const EXERCISE_MAP: Record<ExerciseId, number> = {
-    "push-up": 1,
-    squat: 2,
-    plank: 3,
-    "jumping-jack": 4,
-    burpees: 5,
-    "mountain-climber": 6,
-    lunges: 7,
-    "sit-up": 8,
-    "high-knees": 9,
-    "bicycle-crunch": 10,
+    "barbell-squat": 1,
+    "bench-press": 2,
+    deadlift: 3,
+    "pull-up": 4,
+    "overhead-press": 5,
   };
 
   const numericExerciseId =

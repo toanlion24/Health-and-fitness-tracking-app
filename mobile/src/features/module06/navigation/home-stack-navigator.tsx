@@ -3,6 +3,7 @@ import { createStackNavigator, type StackNavigationOptions } from "@react-naviga
 import { HomeDashboardScreen } from "../screens/home-dashboard-screen";
 import { HomeReadinessScreen } from "../screens/home-readiness-screen";
 import { HomeTodaySessionScreen } from "../screens/home-today-session-screen";
+import { StepTrackingScreen } from "../../step-tracking";
 import type { HomeStackParamList } from "./home-stack-types";
 
 const Stack = createStackNavigator<HomeStackParamList>();
@@ -21,6 +22,7 @@ export function HomeStackNavigator(): ReactElement {
       <Stack.Screen name="HomeDashboard" component={HomeDashboardScreen} />
       <Stack.Screen name="HomeTodaySession" component={HomeTodaySessionScreen} />
       <Stack.Screen name="HomeReadiness" component={HomeReadinessScreen} />
+      <Stack.Screen name="StepTracking" component={StepTrackingScreen} />
     </Stack.Navigator>
   );
 }

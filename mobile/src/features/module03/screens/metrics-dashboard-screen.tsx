@@ -1,6 +1,7 @@
+import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Module01Layout } from "../../module01/components/module01-layout";
 import {
@@ -25,10 +26,11 @@ export function MetricsDashboardScreen({ navigation }: ProgressStackScreenProps<
   const summary = useProgressDashboardStore((s) => s.summary);
   const fetchSummary = useProgressDashboardStore((s) => s.fetchSummary);
 
-  // Fetch khi màn hình mount
-  useEffect(() => {
-    void fetchSummary(weekMonth);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchSummary(weekMonth);
+    }, [fetchSummary, weekMonth])
+  );
 
   return (
     <Module01Layout variant="metricsDash" contentInset={layout.contentPadProgressMetrics} scrollable>

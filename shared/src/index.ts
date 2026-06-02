@@ -232,3 +232,19 @@ export type ReminderDto = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type ChatMessageDto = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+};
+
+export type ChatRequestDto = {
+  messages: Omit<ChatMessageDto, "id" | "createdAt">[];
+};
+
+export type ChatResponseDto = {
+  reply: string;
+};
+

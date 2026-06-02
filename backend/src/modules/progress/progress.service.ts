@@ -86,7 +86,8 @@ export async function recomputeDailyProgress(
     }
     totalWorkoutMinutes += sessionMins;
 
-    // 2. Tính Calo đốt cháy dựa trên MET từng bài tập
+    // 2. Tính Calo đốt cháy dựa trên MET từng bài tập trong session này
+    let sessionKcal = 0;
     for (const set of s.sets) {
       const durationSec = set.actualDurationSec || 0;
       const met = set.exercise.met ? Number(set.exercise.met) : 5.0; // Mặc định MET=5.0 nếu thiếu
@@ -94,17 +95,16 @@ export async function recomputeDailyProgress(
       if (durationSec > 0) {
         // Công thức: (Thời gian phút) * (MET * 3.5 * Cân nặng) / 200
         const kcal = (durationSec / 60) * (met * 3.5 * userWeight) / 200;
-        totalKcalOut += Math.round(kcal);
-      } else {
-        // Nếu không có duration từng set, dùng duration tổng chia đều (ước tính)
-        // Đây là fallback nếu user chỉ log reps/weight mà không log time từng set
+        sessionKcal += Math.round(kcal);
       }
     }
 
-    // Nếu tổng Calo Out vẫn bằng 0 (do không log duration từng set), dùng fallback dựa trên tổng thời gian session
-    if (totalKcalOut === 0 && sessionMins > 0) {
-       totalKcalOut += Math.round(sessionMins * (5.0 * 3.5 * userWeight) / 200);
+    // Nếu sessionKcal vẫn bằng 0 (do không log duration từng set), dùng fallback dựa trên tổng thời gian session
+    if (sessionKcal === 0 && sessionMins > 0) {
+      sessionKcal = Math.round(sessionMins * (5.0 * 3.5 * userWeight) / 200);
     }
+
+    totalKcalOut += sessionKcal;
   }
 
   const goal = await prisma.userGoal.findFirst({

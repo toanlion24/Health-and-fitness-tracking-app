@@ -6,7 +6,8 @@ import { StatusBar } from "expo-status-bar";
 import { GradientPrimaryButton } from "../../module01/components/gradient-primary-button";
 import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
-import { getExerciseById } from "../data/exercises";
+import { useWorkoutStore } from "../store/workout-store";
+import { EXERCISES } from "../data/exercises";
 import type { WorkoutStackScreenProps } from "../navigation/workout-stack-types";
 
 const LEVEL_CHIP: Record<string, { bg: string; text: string }> = {
@@ -16,7 +17,29 @@ const LEVEL_CHIP: Record<string, { bg: string; text: string }> = {
 };
 
 export function WorkoutDetailScreen({ navigation, route }: WorkoutStackScreenProps<"WorkoutDetail">): ReactElement {
-  const exercise = getExerciseById(route.params.exerciseId);
+  const exercises = useWorkoutStore((s) => s.exercises);
+  const exerciseItem = exercises.find((e) => String(e.id) === String(route.params.exerciseId));
+
+  const staticDetails = EXERCISES.find(
+    (e) =>
+      e.id === route.params.exerciseId ||
+      (exerciseItem && e.name.toLowerCase() === exerciseItem.name.toLowerCase())
+  );
+
+  const exercise = exerciseItem
+    ? {
+        id: String(exerciseItem.id),
+        name: exerciseItem.name,
+        level: staticDetails?.level || "intermediate",
+        kcal: staticDetails?.kcal || 120,
+        minutes: staticDetails?.minutes || 15,
+        muscle: exerciseItem.muscleGroup || staticDetails?.muscle || "Muscle",
+        setsReps: staticDetails?.setsReps || "4 sets × 8 reps",
+        instructions: staticDetails?.instructions || [],
+        tip: staticDetails?.tip || "Focus on form and control.",
+        detailHeroUrl: staticDetails?.detailHeroUrl || "https://images.unsplash.com/photo-1574680096145-d05b474e2155?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800",
+      }
+    : staticDetails;
 
   if (exercise == null) {
     return (

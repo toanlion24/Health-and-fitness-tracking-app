@@ -9,6 +9,7 @@ import { computeEnergyTargets, goalDailyCalories } from "../../module01/lib/metr
 import { useModule01Store } from "../../module01/store/module01-store";
 import { colors, iosCardShadow, radii } from "../../module01/theme/tokens";
 import { font } from "../../module01/theme/fonts";
+import { useAuthStore } from "../../../core/store/auth-store";
 
 /** Demo intake vs goal — replace with logged meals from API. */
 const DEMO_CONSUMED = 1520;
@@ -31,6 +32,9 @@ export function NutritionHomeDashboardScreen({
   const ratio = Math.min(1, DEMO_CONSUMED / target);
   const stepRatio = DEMO_STEPS / STEP_GOAL;
 
+  const user = useAuthStore((s) => s.user);
+  const displayName = user?.profile?.fullName || user?.email?.split("@")[0] || "User";
+
   const startWorkout = (): void => {
     navigation.navigate("Workout", { screen: "WorkoutList" });
   };
@@ -40,7 +44,7 @@ export function NutritionHomeDashboardScreen({
       <View style={{ width: "100%", gap: 20, flex: 1 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
           <View style={{ flex: 1, gap: 6 }}>
-            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.slate500 }}>Hello, User</Text>
+            <Text style={{ fontFamily: font.semibold, fontSize: 15, color: colors.slate500 }}>Hello, {displayName}</Text>
             <Text style={{ fontFamily: font.extrabold, fontSize: 28, letterSpacing: -0.8, color: colors.slate900 }}>
               Ready to crush today
             </Text>

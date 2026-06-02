@@ -21,8 +21,12 @@ export function NutritionAddFoodScreen({ navigation, route }: NutritionStackScre
   const createMealLog = useNutritionApiStore((s) => s.createMealLog);
   const addFoodToMeal = useNutritionApiStore((s) => s.addFoodToMeal);
 
-  // Debounce search
+  // Debounce search / Load default foods menu
   useEffect(() => {
+    if (query.trim().length === 0) {
+      void fetchFoods("");
+      return;
+    }
     if (query.trim().length < 2) return;
     const timer = setTimeout(() => {
       void fetchFoods(query);
@@ -90,16 +94,6 @@ export function NutritionAddFoodScreen({ navigation, route }: NutritionStackScre
           {loadingFoods && <ActivityIndicator color={colors.emerald600} />}
         </View>
 
-        {/* Hint */}
-        {query.trim().length === 0 && (
-          <View style={{ alignItems: "center", gap: 10, paddingTop: 32 }}>
-            <MaterialCommunityIcons name="food-variant" size={48} color={colors.slate300} />
-            <Text style={{ fontFamily: font.bold, fontSize: 14, color: colors.slate400, textAlign: "center" }}>
-              Type to search from thousands of foods.{"\n"}Powered by Open Food Facts.
-            </Text>
-          </View>
-        )}
-
         {/* Results */}
         {query.trim().length >= 2 && !loadingFoods && foods.length === 0 && (
           <View style={{ paddingVertical: 32, alignItems: "center", gap: 8 }}>
@@ -113,8 +107,8 @@ export function NutritionAddFoodScreen({ navigation, route }: NutritionStackScre
 
         {foods.length > 0 && (
           <>
-            <Text style={{ fontFamily: font.semibold, fontSize: 12, color: colors.slate500 }}>
-              {foods.length} result{foods.length !== 1 ? "s" : ""}
+            <Text style={{ fontFamily: font.bold, fontSize: 13, color: colors.slate700, marginVertical: 4 }}>
+              {query.trim().length === 0 ? "Menu / Available Foods" : `${foods.length} result${foods.length !== 1 ? "s" : ""}`}
             </Text>
             <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 10, paddingBottom: 24 }}>
               {foods.map((food) => (

@@ -6,7 +6,8 @@ import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens
 import { font } from "../../module01/theme/fonts";
 import type { MealSlot } from "../data/nutrition-demo";
 import type { NutritionStackScreenProps } from "../navigation/nutrition-stack-types";
-import { mealLines, mealTotal, useNutritionLogStore } from "../store/nutrition-log-store";
+import { useEffect } from "react";
+import { useNutritionApiStore, getMealLogsByType, getMealKcal } from "../store/nutrition-api-store";
 
 const TITLE: Record<MealSlot, string> = {
   breakfast: "Breakfast",
@@ -16,8 +17,24 @@ const TITLE: Record<MealSlot, string> = {
 
 export function NutritionMealDetailScreen({ navigation, route }: NutritionStackScreenProps<"MealDetail">): ReactElement {
   const meal = route.params.meal;
-  const lines = useNutritionLogStore((s) => mealLines(s, meal));
-  const total = useNutritionLogStore((s) => mealTotal(s, meal));
+  const mealLogs = useNutritionApiStore((s) => s.mealLogs);
+  const fetchTodayLogs = useNutritionApiStore((s) => s.fetchTodayLogs);
+
+  useEffect(() => {
+    void fetchTodayLogs();
+  }, []);
+
+  const logsForMeal = getMealLogsByType(mealLogs, meal as any);
+  const lines = logsForMeal.flatMap((log) =>
+    log.items.map((item) => ({
+      id: String(item.id),
+      name: item.customFoodName || "Unnamed food",
+      kcal: item.kcal,
+      sub: `${item.quantity}× ${item.unit || "serving"} · ${Math.round(Number(item.proteinG))}g protein`,
+    }))
+  );
+
+  const total = getMealKcal(mealLogs, meal as any);
 
   return (
     <Module01Layout variant="metricsDash" contentInset={[12, 20, 28, 20]} scrollable={false}>

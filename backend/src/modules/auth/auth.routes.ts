@@ -5,6 +5,7 @@ import {
   loginBodySchema,
   refreshBodySchema,
   registerBodySchema,
+  socialLoginBodySchema,
 } from "./auth.dto.js";
 import * as authController from "./auth.controller.js";
 
@@ -28,6 +29,19 @@ export function createAuthRouter(): Router {
     validateBody(refreshBodySchema),
     authController.logout,
   );
+  
+  router.post(
+    "/google",
+    validateBody(socialLoginBodySchema),
+    authController.loginWithGoogle,
+  );
+  
+  router.post(
+    "/apple",
+    validateBody(socialLoginBodySchema),
+    authController.loginWithApple,
+  );
 
   return router;
 }
+

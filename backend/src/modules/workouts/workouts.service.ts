@@ -35,8 +35,9 @@ export async function listExercises(
   const take = query.limit ?? 100;
   const skip = query.offset ?? 0;
 
-  // If there's a search keyword, try fetching from Wger API first to enrich the database
-  if (q.length >= 2) {
+  // If database only has default seeded exercises, or if there's a search keyword, fetch from wger API
+  const dbCount = await prisma.exerciseCatalog.count();
+  if (dbCount <= 5 || q.length >= 2) {
     try {
       const url = new URL("https://wger.de/api/v2/exerciseinfo/");
       url.searchParams.append("language", "2"); // English

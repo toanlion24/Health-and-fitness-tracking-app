@@ -34,22 +34,24 @@ enum ReminderType {
 model User {
   id           Int        @id @default(autoincrement())
   email        String     @unique @db.VarChar(255)
-  passwordHash String     @map("password_hash") @db.VarChar(255)
+  passwordHash String?    @map("password_hash") @db.VarChar(255)
+  googleId     String?    @unique @map("google_id") @db.VarChar(255)
+  appleId      String?    @unique @map("apple_id") @db.VarChar(255)
   status       UserStatus @default(active)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  profile          UserProfile?
-  goals            UserGoal[]
-  refreshTokens    RefreshToken[]
-  workoutPlans     WorkoutPlan[]
-  workoutSessions  WorkoutSession[]
-  mealLogs         MealLog[]
-  bodyMetricLogs   BodyMetricLog[]
-  customFoods      FoodCatalog[]
-  dailyProgress    DailyProgress[]
-  reminders        Reminder[]
-  deviceTokens     DeviceToken[]
+  profile         UserProfile?
+  goals           UserGoal[]
+  refreshTokens   RefreshToken[]
+  workoutPlans    WorkoutPlan[]
+  workoutSessions WorkoutSession[]
+  mealLogs        MealLog[]
+  bodyMetricLogs  BodyMetricLog[]
+  customFoods     FoodCatalog[]
+  dailyProgress   DailyProgress[]
+  reminders       Reminder[]
+  deviceTokens    DeviceToken[]
 
   @@map("users")
 }
@@ -113,10 +115,10 @@ model DeviceToken {
 }
 
 model ExerciseCatalog {
-  id          Int     @id @default(autoincrement())
-  name        String  @db.VarChar(255)
-  muscleGroup String? @map("muscle_group") @db.VarChar(128)
-  equipment   String? @db.VarChar(128)
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  muscleGroup String?  @map("muscle_group") @db.VarChar(128)
+  equipment   String?  @db.VarChar(128)
   met         Decimal? @db.Decimal(5, 2)
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -173,9 +175,9 @@ model WorkoutSession {
 
   createdAt DateTime @default(now()) @map("created_at")
 
-  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan  WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
-  sets  WorkoutSessionSet[]
+  user User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan WorkoutPlan?        @relation(fields: [planId], references: [id], onDelete: SetNull)
+  sets WorkoutSessionSet[]
 
   @@index([userId, sessionDate])
   @@map("workout_sessions")

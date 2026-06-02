@@ -63,10 +63,39 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       const res = await fetchApi(`/exercises?${params.toString()}`);
       if (res.ok) {
         const data = (await res.json()) as ExerciseItem[];
-        set({ exercises: data });
+        if (data && data.length > 0) {
+          set({ exercises: data, loadingExercises: false });
+          return;
+        }
       }
     } catch (e) {
       console.error("fetchExercises error:", e);
+    }
+
+    // Fallback to local data
+    try {
+      const { EXERCISES } = await import("../data/exercises");
+      const EXERCISE_MAP: Record<string, number> = {
+        "barbell-squat": 1,
+        "bench-press": 2,
+        deadlift: 3,
+        "pull-up": 4,
+        "overhead-press": 5,
+      };
+      const filtered = EXERCISES.filter((e) => {
+        const matchQ = query ? e.name.toLowerCase().includes(query.toLowerCase()) : true;
+        const matchMuscle = muscle ? e.muscle.toLowerCase() === muscle.toLowerCase() : true;
+        return matchQ && matchMuscle;
+      }).map((e) => ({
+        id: EXERCISE_MAP[e.id] ?? Math.floor(Math.random() * 1000) + 10,
+        name: e.name,
+        muscleGroup: e.muscle,
+        equipment: null,
+        met: e.id === "pull-up" ? 8.0 : e.id === "overhead-press" ? 5.0 : 6.0,
+      }));
+      set({ exercises: filtered });
+    } catch (fallbackError) {
+      console.error("Failed to load local exercises fallback", fallbackError);
     } finally {
       set({ loadingExercises: false });
     }

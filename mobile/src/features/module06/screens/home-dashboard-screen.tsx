@@ -1,10 +1,11 @@
+import { useFocusEffect } from "@react-navigation/native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { StackScreenProps } from "@react-navigation/stack";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { MainTabParamList } from "../../../core/navigation/main-tab-types";
@@ -19,6 +20,7 @@ import { useAuthStore } from "../../../core/store/auth-store";
 import { useNutritionApiStore, getTodayTotals } from "../../module05/store/nutrition-api-store";
 import { useProgressDashboardStore } from "../../module03/store/progress-dashboard-store";
 import { useWorkoutStore } from "../../module04/store/workout-store";
+import { useStepTracker } from "../../step-tracking";
 
 export type HomeDashboardCompositeProps = CompositeScreenProps<
   StackScreenProps<HomeStackParamList, "HomeDashboard">,
@@ -39,10 +41,12 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
   const { summary, fetchSummary } = useProgressDashboardStore();
   const { activeSession } = useWorkoutStore();
 
-  useEffect(() => {
-    void fetchTodayLogs();
-    void fetchSummary("week");
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void fetchTodayLogs();
+      void fetchSummary("week");
+    }, [fetchTodayLogs, fetchSummary])
+  );
 
   // Compute values
   const displayName = user?.profile?.fullName || user?.email?.split("@")[0] || t("home.displayName");
@@ -56,11 +60,18 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
   const todayItem = summary?.dailyItems?.find((d) => d.date === todayIsoStr);
   const activeWorkoutMins = todayItem ? todayItem.totalWorkoutMinutes : 0;
 
-  // Premium dynamic steps and active minutes
-  const stepsVal = 4200 + activeWorkoutMins * 110;
+  // Fetch real-time steps from Health Connect or hardware sensor
+  const { steps: stepsVal } = useStepTracker();
+
+  // Format step count for display
   const stepsString = stepsVal > 999 ? `${(stepsVal / 1000).toFixed(1)}k` : String(stepsVal);
 
   const readinessScore = 80 + Math.min(20, Math.floor(activeWorkoutMins / 3.5) + (kcalRemaining < 500 ? 5 : -4));
+
+  // Calorie Burned today: Workout calories from daily progress + steps calories (steps * 0.04)
+  const exerciseBurn = todayItem ? todayItem.totalKcalOut : 0;
+  const stepsBurn = Math.round(stepsVal * 0.04);
+  const totalKcalBurned = exerciseBurn + stepsBurn;
 
   const openSessionDetail = (): void => {
     navigation.navigate("HomeTodaySession");
@@ -156,8 +167,15 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
         </Pressable>
 
         <View style={styles.statsRow}>
-          <StatCard border="#38BDF899" label={t("home.statMove")} value={String(kcalRemaining)} suffix={t("home.statKcalLeft")} />
-          <StatCard border="#34D39999" label={t("home.statSteps")} value={stepsString} />
+          <StatCard border="#38BDF899" label={t("home.statMove")} value={String(totalKcalBurned)} suffix="kcal" />
+          <Pressable
+            onPress={() => navigation.navigate("StepTracking")}
+            accessibilityRole="button"
+            accessibilityLabel="Open step tracker"
+            style={{ flex: 1 }}
+          >
+            <StatCard border="#34D39999" label={t("home.statSteps")} value={stepsString} suffix="Tap to view" />
+          </Pressable>
           <StatCard border="#2DD4BF99" label={t("home.statActive")} value={`${activeWorkoutMins}m`} />
         </View>
 
@@ -207,6 +225,7 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
         <View style={styles.quickRow}>
           <QuickChip label={t("home.quickNutrition")} onPress={goNutrition} border="rgba(34,211,238,0.35)" />
           <QuickChip label={t("home.quickProgress")} onPress={goProgress} border="rgba(16,185,129,0.35)" />
+          <QuickChip label="Steps" onPress={() => navigation.navigate("StepTracking")} border="rgba(52,211,153,0.35)" />
           <QuickChip label={t("home.quickCoach")} onPress={() => setCoachSheetOpen(true)} border="rgba(148,163,184,0.35)" />
         </View>
 
