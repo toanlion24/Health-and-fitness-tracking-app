@@ -44,6 +44,7 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
   const [reps, setReps] = useState("10");
   const [weight, setWeight] = useState("0");
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastSetTimeRef = useRef(0);
 
   const startSession = useWorkoutStore((s) => s.startSession);
   const logSet = useWorkoutStore((s) => s.logSet);
@@ -84,12 +85,15 @@ export function WorkoutPlayerScreen({ navigation, route }: WorkoutStackScreenPro
   const handleLogSet = async (): Promise<void> => {
     const actualReps = parseInt(reps, 10) || 0;
     const actualWeightKg = parseFloat(weight) || 0;
+    const currentDuration = elapsedSec - lastSetTimeRef.current;
+    
     await logSet({
       exerciseId: numericExerciseId,
       actualReps,
       actualWeightKg,
-      actualDurationSec: elapsedSec > 0 ? elapsedSec : null,
+      actualDurationSec: currentDuration > 0 ? currentDuration : null,
     });
+    lastSetTimeRef.current = elapsedSec;
     Alert.alert("✅ Set logged", `${actualReps} reps @ ${actualWeightKg}kg`);
   };
 
