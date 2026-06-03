@@ -81,7 +81,7 @@ User Context Profile:
     try {
       logger.info({ userId }, "Initializing Gemini API via native fetch...");
       const systemInstruction = `
-You are "Antigravity AI Health & Fitness Coach", a friendly, highly professional, encouraging, and certified personal trainer and dietitian.
+You are "AI Health & Fitness Coach", a friendly, highly professional, encouraging, and certified personal trainer and dietitian.
 You are helping the following user:
 ${userContextPrompt}
 
