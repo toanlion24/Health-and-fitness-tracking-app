@@ -74,70 +74,100 @@ User Context Profile:
 - Weekly Exercise Target: ${weeklyWorkoutTarget} sessions per week
 `;
 
-  // 3. Check for Gemini API key configuration
   const apiKey = process.env.GEMINI_API_KEY;
   const isKeyConfigured = apiKey && apiKey !== "your_gemini_api_key_here" && apiKey.trim() !== "";
 
   if (isKeyConfigured) {
     try {
-      logger.info({ userId }, "Initializing Gemini API for health coach...");
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({
-        model: "gemini-flash-latest",
-        generationConfig: {
-          temperature: 0.75,
-          maxOutputTokens: 1200,
-        },
-      });
-
-      // Construct system instructions
+      logger.info({ userId }, "Initializing Gemini API via native fetch...");
       const systemInstruction = `
 You are "Antigravity AI Health & Fitness Coach", a friendly, highly professional, encouraging, and certified personal trainer and dietitian.
 You are helping the following user:
 ${userContextPrompt}
 
-Your mission is to provide accurate, highly structured, evidence-based, and personalized health recommendations.
-
 CRITICAL INSTRUCTIONS:
-1. **Choose Food & Nutrition Advice**:
-   - Give precise food recommendations that align with their goal (${goalType}) and daily calorie target (${dailyKcalTarget} kcal).
-   - Divide recommendations into: Breakfast, Lunch, Dinner, and Snacking.
-   - Specify healthy, accessible ingredients.
-   - State estimated calories and approximate macros (Protein, Carbs, Fats) for each meal.
-   
-2. **Weekly Exercise Schedule**:
-   - Provide a highly structured 7-day program (Day 1 through Day 7) optimized for their fitness goal (${goalType}) and weekly target (${weeklyWorkoutTarget} workouts).
-   - Detail the training type, specific exercise names, target sets, reps, and which muscle groups are trained.
-   - Include active recovery or rest days.
-
-3. **Tone & Style**:
-   - Be professional, warm, empathetic, and direct. Avoid excessive preambles or conversational fluff.
-   - Use Markdown format for structural clarity.
-   - Use **bold text** for key highlights, metrics, or food/exercise names (e.g. **Bench Press**, **Oatmeal**).
-   - Use section headers like "### " (e.g. "### Day 1: Upper Body Focus").
-   - Use lists with dashes "- " for items. Do NOT use nested lists.
-   - Respond in the language that matches the user's latest query (English or Vietnamese).
+1. Choose Food & Nutrition Advice based on goals and calories.
+2. Provide a 7-day program based on weekly workout target.
+3. Use Markdown format. Use bold text for key highlights. Use section headers like "### ". Use lists with dashes "- ". Do NOT use nested lists.
+4. Respond in the language that matches the user's latest query (English or Vietnamese).
 `;
 
-      const chatHistory = messages.map((msg) => ({
+      const rawContents = messages.map(msg => ({
         role: msg.role === "assistant" ? "model" : "user",
-        parts: [{ text: msg.content }],
+        parts: [{ text: msg.content }]
       }));
 
-      // Pull latest message out as the prompt
-      const latestMessage = chatHistory[chatHistory.length - 1];
-      const previousHistory = chatHistory.slice(0, -1);
+      // Sanitize history for Gemini: MUST start with 'user' and MUST strictly alternate roles
+      const sanitizedContents: any[] = [];
+      let expectedRole = "user";
 
-      const chatSession = model.startChat({
-        history: previousHistory,
+      for (const msg of rawContents) {
+        if (msg.role === expectedRole) {
+          sanitizedContents.push(msg);
+          expectedRole = expectedRole === "user" ? "model" : "user";
+        } else {
+          // If we encounter a consecutive message of the same role, append its text to the previous message
+          if (sanitizedContents.length > 0) {
+            const lastIdx = sanitizedContents.length - 1;
+            sanitizedContents[lastIdx].parts[0].text += "\n\n" + msg.parts[0].text;
+          }
+        }
+      }
+
+      if (sanitizedContents.length > 0 && sanitizedContents[0].role === "model") {
+        sanitizedContents.shift();
+      }
+
+      if (sanitizedContents.length === 0) {
+        sanitizedContents.push({ role: "user", parts: [{ text: "Hello" }] });
+      }
+
+      const payload = {
         systemInstruction: {
-          role: "system",
-          parts: [{ text: systemInstruction }],
+          parts: [{ text: systemInstruction }]
         },
-      });
+        contents: sanitizedContents,
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 3000,
+        }
+      };
 
-      const responseResult = await chatSession.sendMessage(latestMessage.parts[0].text);
-      const replyText = responseResult.response.text();
+      let replyText = "";
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!res.ok) {
+            const errText = await res.text();
+            if (res.status === 503 || res.status === 429) {
+              throw new Error(`overloaded: ${res.status} ${errText}`);
+            }
+            throw new Error(`failed: ${res.status} ${errText}`);
+          }
+
+          const data = await res.json() as any;
+          if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+            replyText = data.candidates[0].content.parts[0].text;
+            break;
+          } else {
+            throw new Error("Invalid Gemini response format");
+          }
+        } catch (apiErr: any) {
+          if (apiErr.message.includes("overloaded") && retries > 1) {
+            logger.warn({ userId }, "Gemini overloaded, retrying in 2s...");
+            retries--;
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
+          }
+          throw apiErr;
+        }
+      }
 
       if (replyText) {
         return replyText;
@@ -147,35 +177,75 @@ CRITICAL INSTRUCTIONS:
     }
   }
 
-  // 4. Fallback to high-quality Expert Heuristic Engine
   logger.info({ userId }, "Running Expert Heuristic Coach Engine...");
   const lastUserMsg = messages[messages.length - 1]?.content.toLowerCase() || "";
   const isVietnamese = lastUserMsg.includes("ăn") || lastUserMsg.includes("tập") || lastUserMsg.includes("lịch") || lastUserMsg.includes("chế độ") || lastUserMsg.includes("sức khỏe") || lastUserMsg.includes("chào");
 
-  // Determine user intent
   const wantsFood = lastUserMsg.includes("food") || lastUserMsg.includes("eat") || lastUserMsg.includes("diet") || lastUserMsg.includes("meal") || lastUserMsg.includes("nutrition") || lastUserMsg.includes("calorie") || lastUserMsg.includes("protein") || lastUserMsg.includes("ăn") || lastUserMsg.includes("bữa") || lastUserMsg.includes("dinh dưỡng");
   const wantsExercise = lastUserMsg.includes("schedule") || lastUserMsg.includes("exercise") || lastUserMsg.includes("workout") || lastUserMsg.includes("routine") || lastUserMsg.includes("week") || lastUserMsg.includes("split") || lastUserMsg.includes("plan") || lastUserMsg.includes("tập") || lastUserMsg.includes("lịch") || lastUserMsg.includes("thể dục") || lastUserMsg.includes("chương trình");
 
   if (wantsFood) {
-    return generateHeuristicFoodAdvice(name, goalType, dailyKcalTarget, isVietnamese);
+    return generateHeuristicFoodAdvice(name, goalType, dailyKcalTarget, isVietnamese, weight, age);
   } else if (wantsExercise) {
-    return generateHeuristicExerciseSchedule(name, goalType, weeklyWorkoutTarget, isVietnamese);
+    return generateHeuristicExerciseSchedule(name, goalType, weeklyWorkoutTarget, isVietnamese, weight, age, activityLevel);
   } else {
     return generateHeuristicGeneralGreeting(name, userContextPrompt, isVietnamese);
   }
 }
 
-// --- HEURISTIC GENERATORS ---
-
-function generateHeuristicFoodAdvice(name: string, goalType: string, dailyKcalTarget: number, isVietnamese: boolean): string {
+function generateHeuristicFoodAdvice(name: string, goalType: string, dailyKcalTarget: number, isVietnamese: boolean, weight: string, age: string): string {
   const proteinTarget = Math.round(dailyKcalTarget * 0.3 / 4);
   const carbTarget = Math.round(dailyKcalTarget * 0.45 / 4);
   const fatTarget = Math.round(dailyKcalTarget * 0.25 / 9);
 
-  if (isVietnamese) {
-    return `### 🥗 Thực Đơn Dinh Dưỡng Cho Bạn (${name})
+  let breakfast = "";
+  let lunch = "";
+  let dinner = "";
+  let snack = "";
 
-Dựa trên mục tiêu **${goalType}** và chỉ tiêu tiêu thụ **${dailyKcalTarget} kcal/ngày**, dưới đây là gợi ý thực đơn lành mạnh dành riêng cho bạn:
+  if (dailyKcalTarget < 1800) {
+    breakfast = "**Greek Yogurt Bowl** (1 cup non-fat Greek yogurt, 1/2 cup berries) OR **Egg Whites** (3 egg whites, 1 slice whole-wheat toast).";
+    lunch = "**Grilled Chicken Salad** (150g chicken breast, mixed greens, light vinaigrette).";
+    snack = "1 medium **Apple** or a small handful of **Almonds** (20g).";
+    dinner = "**Baked Cod or Tofu** (150g) with steamed asparagus and a small portion of quinoa (1/2 cup).";
+  } else if (dailyKcalTarget > 2500) {
+    breakfast = "**Oatmeal with Protein Powder** (1 cup oats, 1 scoop whey, peanut butter, banana) OR **Whole Eggs & Bacon** (3 eggs, 2 slices turkey bacon, 2 toasts).";
+    lunch = "**Beef & Rice Bowl** (200g lean beef, 1.5 cups jasmine rice, broccoli, avocado).";
+    snack = "**Protein Shake** with milk and a **Peanut Butter Sandwich**.";
+    dinner = "**Salmon & Sweet Potato** (200g salmon, 1 large sweet potato, roasted veggies).";
+  } else {
+    breakfast = "**Greek Yogurt Bowl** with 1 cup plain non-fat Greek yogurt, 1/2 cup blueberries, and 1 tbsp honey. ";
+    lunch = "**Grilled Chicken & Quinoa Salad** with 200g chicken breast, 1 cup cooked quinoa, mixed spinach, tomatoes, and cucumber.";
+    snack = "1 medium **Apple** paired with 1.5 tbsp of **Almond Butter**.";
+    dinner = "**Pan-Seared Salmon** (150g) served with 1 medium baked **Sweet Potato** and roasted green beans.";
+  }
+
+  if (isVietnamese) {
+    let vnBreakfast = "";
+    let vnLunch = "";
+    let vnDinner = "";
+    let vnSnack = "";
+
+    if (dailyKcalTarget < 1800) {
+      vnBreakfast = "**Cháo yến mạch** nấu thịt bằm hoặc **Phở gà nạc** (ít bánh).";
+      vnLunch = "**Salad ức gà** (150g ức gà, xà lách, sốt mè rang ít béo).";
+      vnSnack = "1 quả **táo** hoặc 1 hũ **sữa chua không đường**.";
+      vnDinner = "**Cá hấp** (150g) ăn kèm nửa chén cơm gạo lứt và rau luộc.";
+    } else if (dailyKcalTarget > 2500) {
+      vnBreakfast = "**Phở bò** đủ tô (nhiều thịt) hoặc 4 quả trứng ốp la với bánh mì.";
+      vnLunch = "**Cơm sườn nướng** (200g sườn nạc, 1.5 chén cơm, rau xào).";
+      vnSnack = "**Sinh tố bơ** hoặc **bánh mì bơ đậu phộng**.";
+      vnDinner = "**Bò xào hành tây** (200g thịt bò) với 1 chén cơm và canh rau.";
+    } else {
+      vnBreakfast = "**Phở gà nạc** hoặc **Cháo yến mạch** nấu với 150g ức gà xé.";
+      vnLunch = "1 chén **cơm gạo lứt** (khoảng 150g), 200g **ức gà áp chảo** hoặc **cá hồi nướng**, 200g **bông cải xanh luộc**.";
+      vnSnack = "1 hũ **sữa chua không đường** ăn kèm với một nắm nhỏ **hạt hạnh nhân**.";
+      vnDinner = "150g **thịt bò nạc xào bông thiên lý** hoặc 150g **đậu hũ trắng sốt cà chua** thanh nhẹ.";
+    }
+
+    return `### 🥗 Thực Đơn Dinh Dưỡng Cho Bạn (${name} - ${age})
+
+Dựa trên mục tiêu **${goalType}**, mức cân nặng hiện tại **${weight}** và chỉ tiêu tiêu thụ **${dailyKcalTarget} kcal/ngày**, dưới đây là gợi ý thực đơn lành mạnh dành riêng cho bạn:
 
 **Chỉ tiêu dinh dưỡng hôm nay:**
 - **Lượng calo:** ~${dailyKcalTarget} kcal
@@ -186,161 +256,130 @@ Dựa trên mục tiêu **${goalType}** và chỉ tiêu tiêu thụ **${dailyKca
 ---
 
 ### 🍳 Bữa Sáng (Khoảng 25% Calo)
-- **Món ăn:** **Phở gà nạc** hoặc **Cháo yến mạch** nấu với 150g ức gà xé.
-- **Tráng miệng:** 1 quả chuối tiêu chín.
-- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.25)} kcal (Protein: ~30g, Carbs: ~50g, Fat: ~8g).
-- **Mẹo tốt:** Uống thêm 300ml nước lọc ấm ngay sau khi thức dậy để thanh lọc cơ thể.
+- **Món ăn:** ${vnBreakfast}
+- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.25)} kcal.
 
 ### 🍱 Bữa Trưa (Khoảng 40% Calo)
-- **Món ăn:** 1 chén **cơm gạo lứt** (khoảng 150g), 200g **ức gà áp chảo** hoặc **cá hồi nướng**, 200g **bông cải xanh luộc**.
-- **Chất béo tốt:** 1 muỗng dầu ô-liu rưới lên salad.
-- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.40)} kcal (Protein: ~45g, Carbs: ~65g, Fat: ~12g).
-- **Mẹo tốt:** Nhai thật kỹ để hỗ trợ quá trình tiêu hóa và hấp thụ dinh dưỡng tốt nhất.
+- **Món ăn:** ${vnLunch}
+- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.40)} kcal.
 
 ### 🍓 Bữa Phụ Chiều (Khoảng 10% Calo)
-- **Món ăn:** 1 hũ **sữa chua không đường** ăn kèm với một nắm nhỏ **hạt hạnh nhân** hoặc hạt điều (~30g).
-- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.10)} kcal (Protein: ~8g, Carbs: ~12g, Fat: ~6g).
+- **Món ăn:** ${vnSnack}
+- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.10)} kcal.
 
 ### 🍲 Bữa Tối (Khoảng 25% Calo)
-- **Món ăn:** 150g **thịt bò nạc xào bông thiên lý** hoặc 150g **đậu hũ trắng sốt cà chua** thanh nhẹ, ăn kèm 1 củ **khoai lang luộc** nhỏ.
-- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.25)} kcal (Protein: ~28g, Carbs: ~35g, Fat: ~9g).
-- **Mẹo tốt:** Hãy cố gắng hoàn thành bữa tối trước 19:30 để dạ dày kịp nghỉ ngơi trước khi ngủ.`;
+- **Món ăn:** ${vnDinner}
+- **Calo dự kiến:** ~${Math.round(dailyKcalTarget * 0.25)} kcal.`;
   }
 
-  // English Version
-  return `### 🥗 Personalized Nutrition & Meal Plan for ${name}
+  return `### 🥗 Personalized Nutrition & Meal Plan for ${name} (${age})
 
-Based on your goal of **${goalType}** and your daily target of **${dailyKcalTarget} kcal**, here is a highly balanced, structured, and easy-to-follow meal guide:
+Based on your goal of **${goalType}**, current weight of **${weight}**, and daily target of **${dailyKcalTarget} kcal**, here is a custom-tailored meal guide using your exact data:
 
 **Your Daily Macro Targets:**
 - **Calories:** ~${dailyKcalTarget} kcal
-- **Protein:** ~${proteinTarget}g (Crucial for muscle repair and satiety)
-- **Carbohydrates:** ~${carbTarget}g (Fuel for your brain and physical activity)
-- **Fats:** ~${fatTarget}g (Essential for cellular and hormone health)
+- **Protein:** ~${proteinTarget}g (Crucial for muscle repair)
+- **Carbohydrates:** ~${carbTarget}g (Fuel for your physical activity)
+- **Fats:** ~${fatTarget}g (Essential for cellular health)
 
 ---
 
 ### 🍳 Breakfast (Approx. 25% of Daily Budget)
-- **Option:** **Greek Yogurt Bowl** with 1 cup plain non-fat Greek yogurt, 1/2 cup blueberries, and 1 tbsp honey. Alternatively, 2 **Scrambled Eggs** with 2 slices of whole-wheat toast.
-- **Beverage:** 1 large glass of water.
-- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.25)} kcal (Protein: ~28g, Carbs: ~35g, Fats: ~8g).
-- **Coach Tip:** Start breakfast with adequate protein to kickstart metabolism and prevent mid-morning cravings.
+- **Option:** ${breakfast}
+- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.25)} kcal.
 
 ### 🍱 Lunch (Approx. 40% of Daily Budget)
-- **Option:** **Grilled Chicken & Quinoa Salad** with 200g chicken breast, 1 cup cooked quinoa, mixed spinach, tomatoes, and cucumber.
-- **Healthy Fats:** 1 tbsp olive oil vinaigrette dressing.
-- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.40)} kcal (Protein: ~42g, Carbs: ~55g, Fats: ~11g).
-- **Coach Tip:** Packing your own lunch prevents impulsive fast-food choices. Keep it colorful!
+- **Option:** ${lunch}
+- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.40)} kcal.
 
 ### 🍓 Mid-Day Snack (Approx. 10% of Daily Budget)
-- **Option:** 1 medium **Apple** sliced, paired with 1.5 tbsp of **Almond Butter** or a handful of mixed raw nuts (30g).
-- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.10)} kcal (Protein: ~6g, Carbs: ~15g, Fats: ~8g).
+- **Option:** ${snack}
+- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.10)} kcal.
 
 ### 🍲 Dinner (Approx. 25% of Daily Budget)
-- **Option:** **Pan-Seared Salmon** (150g) or lean **Sirloin Steak**, served with 1 medium baked **Sweet Potato** and roasted green beans.
-- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.25)} kcal (Protein: ~32g, Carbs: ~30g, Fats: ~10g).
-- **Coach Tip:** Eat a lighter dinner and avoid eating within 2 hours of sleep to improve sleep cycles and recovery.`;
+- **Option:** ${dinner}
+- **Estimated Nutrition:** ~${Math.round(dailyKcalTarget * 0.25)} kcal.`;
 }
 
-function generateHeuristicExerciseSchedule(name: string, goalType: string, weeklyWorkoutTarget: number, isVietnamese: boolean): string {
-  if (isVietnamese) {
-    return `### 🏋️ Lịch Trình Tập Luyện Hàng Tuần Cho Bạn (${name})
+function generateHeuristicExerciseSchedule(name: string, goalType: string, weeklyWorkoutTarget: number, isVietnamese: boolean, weight: string, age: string, activityLevel: string): string {
+  let isSedentary = activityLevel.toLowerCase().includes("sedentary") || activityLevel.toLowerCase().includes("low");
 
-Chào bạn! Lịch trình này được tối ưu hóa đặc biệt theo mục tiêu **${goalType}** với cường độ **${weeklyWorkoutTarget} buổi tập/tuần** nhằm đảm bảo hiệu quả tối đa và thời gian phục hồi cơ bắp hợp lý.
+  if (isVietnamese) {
+    let vnRoutines = {
+      day1: isSedentary ? "Đi bộ nhanh (30 phút) và giãn cơ cơ bản." : "**Dumbbell Bench Press:** 3 hiệp x 8-10 lần (nghỉ 90 giây).\n- **Lat Pulldown:** 3 hiệp x 12 lần (nghỉ 75 giây).",
+      day3: isSedentary ? "Tập Bodyweight Squats (3 hiệp x 12 lần) và Lunge tại chỗ." : "**Barbell Squat:** 4 hiệp x 8 lần (nghỉ 2 phút).\n- **Romanian Deadlift:** 3 hiệp x 10 lần (nghỉ 90 giây).",
+      day5: isSedentary ? "Đạp xe tĩnh (20 phút) hoặc bơi lội nhẹ." : "**Goblet Squat:** 3 hiệp x 12 lần.\n- **Push-ups (Chống đẩy):** 3 hiệp x tối đa.\n- **Plank:** 3 hiệp x 45-60 giây."
+    };
+
+    return `### 🏋️ Lịch Trình Tập Luyện Hàng Tuần Cho Bạn (${name} - ${age})
+
+Chào bạn! Lịch trình này được thiết kế riêng dựa trên mức độ vận động **${activityLevel}** và cân nặng **${weight}** của bạn. Mục tiêu **${goalType}** với cường độ **${weeklyWorkoutTarget} buổi tập/tuần**.
 
 ---
 
 ### 📅 Lịch Tập 7 Ngày Chi Tiết
 
-### ### Ngày 1: Tập Sức Mạnh Thân Trên (Upper Body Focus)
-- **Kiểu tập:** Kháng lực nâng tạ.
-- **Các bài tập:**
-  - **Bench Press (Đẩy ngực ngang):** 3 hiệp x 8-10 lần (nghỉ 90 giây).
-  - **Bent-over Row (Kéo lưng với thanh đòn):** 3 hiệp x 8-10 lần (nghỉ 90 giây).
-  - **Overhead Press (Đẩy vai đứng):** 3 hiệp x 10 lần (nghỉ 75 giây).
-  - **Lat Pulldown (Kéo xô rộng tay):** 3 hiệp x 12 lần (nghỉ 75 giây).
-- **Mẹo phục hồi:** Thực hiện xoay khớp vai kỹ lưỡng trước khi bắt đầu và căng cơ ngực/lưng 5 phút sau tập.
+### Ngày 1: Tập Sức Mạnh Thân Trên
+- ${vnRoutines.day1}
 
-### ### Ngày 2: Nghỉ ngơi tích cực (Active Recovery)
-- **Kiểu tập:** Đi bộ thư giãn nhẹ nhàng hoặc tập căng cơ linh hoạt (Yoga nhẹ).
-- **Mục tiêu:** Thúc đẩy tuần hoàn máu giúp giảm nhức mỏi cơ từ Ngày 1.
+### Ngày 2: Nghỉ ngơi tích cực
+- Đi bộ thư giãn nhẹ nhàng hoặc tập căng cơ linh hoạt.
 
-### ### Ngày 3: Sức Mạnh Thân Dưới (Lower Body Focus)
-- **Kiểu tập:** Kháng lực đùi & mông.
-- **Các bài tập:**
-  - **Barbell Squat (Gánh đùi sau):** 4 hiệp x 8 lần (nghỉ 2 phút).
-  - **Romanian Deadlift (Căng đùi sau):** 3 hiệp x 10 lần (nghỉ 90 giây).
-  - **Dumbbell Lunges (Bước chùng chân):** 3 hiệp x 12 lần mỗi bên (nghỉ 60 giây).
-  - **Calf Raises (Nhón gót kiểng chân):** 3 hiệp x 15 lần (nghỉ 45 giây).
-- **Mẹo phục hồi:** Uống tối thiểu 2 lít nước trong hôm nay để hỗ trợ quá trình sửa chữa mô cơ đùi.
+### Ngày 3: Sức Mạnh Thân Dưới
+- ${vnRoutines.day3}
 
-### ### Ngày 4: Nghỉ hoàn toàn (Rest Day)
-- **Mục tiêu:** Hãy để hệ thần kinh trung ương và cơ bắp thư giãn hoàn toàn.
+### Ngày 4: Nghỉ hoàn toàn
+- Hãy để hệ thần kinh trung ương và cơ bắp thư giãn.
 
-### ### Ngày 5: Sức Bền & Thể Lực (Full-Body Conditioning)
-- **Kiểu tập:** HIIT hoặc Full Body Circuit nhẹ nhàng.
-- **Các bài tập:**
-  - **Goblet Squat:** 3 hiệp x 12 lần.
-  - **Push-ups (Chống đẩy):** 3 hiệp x tối đa có thể.
-  - **Kettlebell Swing (hoặc Dumbbell Swing):** 3 hiệp x 15 lần.
-  - **Plank (Giữ bụng):** 3 hiệp x 45-60 giây.
-- **Mẹo tốt:** Hoàn thành liên tục các bài tập trong 1 hiệp rồi mới nghỉ 2 phút để đẩy cao nhịp tim.
+### Ngày 5: Sức Bền & Thể Lực
+- ${vnRoutines.day5}
 
-### ### Ngày 6: Nghỉ ngơi & Giãn cơ toàn thân
-- **Mục tiêu:** Tập giãn cơ sâu các nhóm cơ lớn giúp tăng độ dẻo dai.
+### Ngày 6: Giãn cơ toàn thân
+- Tập giãn cơ sâu các nhóm cơ lớn giúp tăng độ dẻo dai.
 
-### ### Ngày 7: Nghỉ hoàn toàn
-- **Mục tiêu:** Thư giãn và nạp năng lượng đầy đủ sẵn sàng bước vào chu kỳ tập tiếp theo vào đầu tuần sau!`;
+### Ngày 7: Nghỉ hoàn toàn
+- Thư giãn và nạp năng lượng đầy đủ sẵn sàng bước vào chu kỳ tập tiếp theo!`;
   }
 
-  // English Version
-  return `### 🏋️ Your 7-Day Personalized Weekly Workout Split for ${name}
+  let enRoutines = {
+    day1: isSedentary ? "Brisk walking (30 mins) and basic dynamic stretching." : "**Dumbbell Bench Press:** 3 sets x 8-10 reps (90 sec rest).\n  - **Lat Pulldown (or Pull-ups):** 3 sets x 8-10 reps.\n  - **Seated Dumbbell Shoulder Press:** 3 sets x 10 reps.",
+    day3: isSedentary ? "Bodyweight Squats (3 sets x 12 reps) and stationary lunges." : "**Barbell Back Squat:** 4 sets x 8 reps (120 sec rest).\n  - **Romanian Deadlift:** 3 sets x 10 reps.\n  - **Leg Press:** 3 sets x 12 reps.",
+    day5: isSedentary ? "Stationary cycling (20 mins) or light swimming." : "**Dumbbell Thrusters:** 3 sets x 12 reps.\n  - **Push-ups:** 3 sets x max reps.\n  - **Plank Hold:** 3 sets x 60 seconds."
+  };
 
-Hello! This custom-tailored plan is engineered for your **${goalType}** goal, aiming for **${weeklyWorkoutTarget} high-quality training sessions** per week to optimize progress and physical recovery.
+  return `### 🏋️ Your 7-Day Personalized Weekly Workout Split
+
+Hello ${name}! As a ${age} individual with an activity level of **${activityLevel}**, this custom plan is engineered specifically for your **${goalType}** goal. We are aiming for **${weeklyWorkoutTarget} high-quality training sessions** per week tailored to your current weight of **${weight}**.
 
 ---
 
-### 📅 The 7-Day Schedule
+### Day 1: Upper Body Strength & Power
+- **Workout Type:** Resistance training
+- **Routine:**
+  - ${enRoutines.day1}
 
-### ### Day 1: Upper Body Strength & Power
-- **Workout Type:** Resistance training (focusing on Chest, Back, and Shoulders).
-- **Exercise Routine:**
-  - **Dumbbell Bench Press:** 3 sets x 8-10 reps (90 sec rest).
-  - **Lat Pulldown (or Pull-ups):** 3 sets x 8-10 reps (90 sec rest).
-  - **Seated Dumbbell Shoulder Press:** 3 sets x 10 reps (75 sec rest).
-  - **Seated Cable Row:** 3 sets x 12 reps (75 sec rest).
-- **Coach Tip:** Warm up your rotator cuffs thoroughly for 5 minutes before starting heavier pushes.
+### Day 2: Active Recovery & Mobility
+- **Workout Type:** Gentle walking (30-40 mins) or mobility stretches.
+- **Goal:** Flush lactic acid and increase blood flow.
 
-### ### Day 2: Active Recovery & Mobility
-- **Workout Type:** Gentle walking (30-40 mins) or mobility and light yoga stretches.
-- **Goal:** Flush lactic acid and increase blood flow without putting heavy load on joints.
+### Day 3: Lower Body Hypertrophy
+- **Workout Type:** Resistance training
+- **Routine:**
+  - ${enRoutines.day3}
 
-### ### Day 3: Lower Body Hypertrophy
-- **Workout Type:** Resistance training (focusing on Quads, Glutes, and Hamstrings).
-- **Exercise Routine:**
-  - **Barbell Back Squat:** 4 sets x 8 reps (120 sec rest).
-  - **Romanian Deadlift:** 3 sets x 10 reps (90 sec rest).
-  - **Leg Press (or Dumbbell Goblet Squat):** 3 sets x 12 reps (75 sec rest).
-  - **Standing Calf Raise:** 3 sets x 15 reps (60 sec rest).
-- **Coach Tip:** Keep your core tightly braced during squats to support lower back safety.
+### Day 4: Full Rest & Rejuvenation
+- **Goal:** Allow the central nervous system to reset. 
 
-### ### Day 4: Full Rest & Rejuvenation
-- **Goal:** Allow the central nervous system to reset. Ensure proper protein intake today to heal muscle tissues!
+### Day 5: Full Body Functional Conditioning
+- **Workout Type:** Caloric burn and core circuit.
+- **Routine:**
+  - ${enRoutines.day5}
 
-### ### Day 5: Full Body Functional Conditioning
-- **Workout Type:** Caloric burn and core conditioning circuit.
-- **Exercise Routine:**
-  - **Dumbbell Thrusters:** 3 sets x 12 reps.
-  - **Push-ups:** 3 sets x max reps.
-  - **Dumbbell Goblet Squat:** 3 sets x 15 reps.
-  - **Plank Hold:** 3 sets x 60 seconds.
-- **Coach Tip:** Perform these as a circuit (one after another), then rest 2 minutes. Repeat for 3 rounds.
+### Day 6: Light Cardio & Deep Stretch
+- **Workout Type:** Light jogging or steady-state cycling (20-30 mins).
 
-### ### Day 6: Light Cardio & Deep Stretch
-- **Workout Type:** Light jogging or steady-state cycling (20-30 mins) followed by full-body static stretches.
-
-### ### Day 7: Full Rest & Nutrition Prep
-- **Goal:** Relax, take a relaxing bath, and prepare your meals and mindset for the upcoming week!`;
+### Day 7: Full Rest & Nutrition Prep
+- **Goal:** Relax and prepare your mindset for the upcoming week!`;
 }
 
 function generateHeuristicGeneralGreeting(name: string, userContextPrompt: string, isVietnamese: boolean): string {

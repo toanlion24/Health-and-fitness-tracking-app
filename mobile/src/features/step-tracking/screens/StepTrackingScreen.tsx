@@ -11,9 +11,9 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStepTracker } from "../hooks/useStepTracker";
-import { Module01Layout } from "../../module01/components/module01-layout";
-import { colors, iosCardShadow, radii, touch } from "../../module01/theme/tokens";
-import { font } from "../../module01/theme/fonts";
+import { OnboardingLayout } from "../../auth/components/onboarding-layout";
+import { colors, iosCardShadow, radii, touch } from "../../auth/theme/tokens";
+import { font } from "../../auth/theme/fonts";
 
 const GOAL_STORAGE_KEY = "@step_tracker_goal";
 const DEFAULT_GOAL = 10000;
@@ -137,17 +137,17 @@ export function StepTrackingScreen({ navigation }: { navigation: any }) {
 
   if (loading) {
     return (
-      <Module01Layout variant="coachPulse" statusBarLight contentInset={[16, 20, 24, 20]} scrollable={false}>
+      <OnboardingLayout variant="coachPulse" statusBarLight contentInset={[16, 20, 24, 20]} scrollable={false}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.cyan600} />
           <Text style={styles.loadingText}>Connecting to step data sources...</Text>
         </View>
-      </Module01Layout>
+      </OnboardingLayout>
     );
   }
 
   return (
-    <Module01Layout variant="coachPulse" statusBarLight contentInset={[16, 20, 24, 20]} scrollable>
+    <OnboardingLayout variant="coachPulse" statusBarLight contentInset={[16, 20, 24, 20]} scrollable>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -315,7 +315,7 @@ export function StepTrackingScreen({ navigation }: { navigation: any }) {
           )}
         </View>
       </View>
-    </Module01Layout>
+    </OnboardingLayout>
   );
 }
 

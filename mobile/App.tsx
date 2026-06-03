@@ -4,12 +4,12 @@ import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { NavigationContainer } from "@react-navigation/native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Module01Navigator } from "./src/core/navigation/module01-navigator";
-import { useModule01Fonts } from "./src/features/module01/theme/fonts";
+import { AuthNavigator } from "./src/core/navigation/auth-navigator";
+import { useAuthFonts } from "./src/features/auth/theme/fonts";
 
 export default function App(): ReactElement {
   const { t } = useTranslation();
-  const fontsLoaded = useModule01Fonts();
+  const fontsLoaded = useAuthFonts();
   if (!fontsLoaded) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8FAFC" }}>
@@ -21,7 +21,7 @@ export default function App(): ReactElement {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NavigationContainer>
-          <Module01Navigator />
+          <AuthNavigator />
         </NavigationContainer>
       </SafeAreaProvider>
     </GestureHandlerRootView>
