@@ -84,7 +84,7 @@ export async function login(
   const user = await prisma.user.findUnique({
     where: { email: body.email.toLowerCase() },
   });
-  if (!user) {
+  if (!user || !user.passwordHash) {
     throw new AppError(
       401,
       ApiErrorCodes.UNAUTHORIZED,
@@ -169,3 +169,109 @@ export async function logout(userId: number, refreshToken: string): Promise<void
     );
   }
 }
+
+import { OAuth2Client } from "google-auth-library";
+import appleSignin from "apple-signin-auth";
+import type { SocialLoginBody } from "./auth.dto.js";
+
+export async function loginWithGoogle(body: SocialLoginBody): Promise<{ user: AuthUserDto; tokens: AuthTokens }> {
+  const env = loadEnv();
+  if (!env.GOOGLE_CLIENT_ID) {
+    throw new AppError(500, ApiErrorCodes.INTERNAL_ERROR, "Google login is not configured on the server");
+  }
+
+  const client = new OAuth2Client(env.GOOGLE_CLIENT_ID);
+  
+  let ticket;
+  try {
+    ticket = await client.verifyIdToken({
+      idToken: body.idToken,
+      audience: env.GOOGLE_CLIENT_ID,
+    });
+  } catch (error) {
+    throw new AppError(401, ApiErrorCodes.UNAUTHORIZED, "Invalid Google ID token");
+  }
+
+  const payload = ticket.getPayload();
+  if (!payload || !payload.email || !payload.sub) {
+    throw new AppError(401, ApiErrorCodes.UNAUTHORIZED, "Invalid Google token payload");
+  }
+
+  const email = payload.email.toLowerCase();
+  const googleId = payload.sub;
+
+  return processSocialLogin(email, { googleId });
+}
+
+export async function loginWithApple(body: SocialLoginBody): Promise<{ user: AuthUserDto; tokens: AuthTokens }> {
+  const env = loadEnv();
+  
+  let appleIdToken;
+  try {
+    appleIdToken = await appleSignin.verifyIdToken(body.idToken, {
+      audience: env.APPLE_CLIENT_ID, // Audience is optional, but recommended
+      ignoreExpiration: true, // We might want to set this to false in production
+    });
+  } catch (error) {
+    throw new AppError(401, ApiErrorCodes.UNAUTHORIZED, "Invalid Apple ID token");
+  }
+
+  if (!appleIdToken || !appleIdToken.sub) {
+    throw new AppError(401, ApiErrorCodes.UNAUTHORIZED, "Invalid Apple token payload");
+  }
+
+  const appleId = appleIdToken.sub;
+  const email = appleIdToken.email?.toLowerCase(); // Email might be hidden or only sent on first login
+
+  if (!email) {
+    // If Apple didn't provide an email (e.g., user hid it or subsequent logins), we MUST find the user by appleId
+    const existingUser = await prisma.user.findUnique({
+      where: { appleId },
+    });
+
+    if (!existingUser) {
+       throw new AppError(400, ApiErrorCodes.VALIDATION_ERROR, "Apple email is missing and user not found");
+    }
+    
+    const tokens = await issueTokens(existingUser.id, existingUser.email);
+    return { user: mapUser(existingUser), tokens };
+  }
+
+  return processSocialLogin(email, { appleId });
+}
+
+async function processSocialLogin(email: string, socialIds: { googleId?: string; appleId?: string }): Promise<{ user: AuthUserDto; tokens: AuthTokens }> {
+  let user = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (user) {
+    // Link social ID if not already linked
+    if ((socialIds.googleId && user.googleId !== socialIds.googleId) || 
+        (socialIds.appleId && user.appleId !== socialIds.appleId)) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          googleId: socialIds.googleId || user.googleId,
+          appleId: socialIds.appleId || user.appleId,
+        },
+      });
+    }
+  } else {
+    // Create new user without password
+    user = await prisma.user.create({
+      data: {
+        email,
+        googleId: socialIds.googleId,
+        appleId: socialIds.appleId,
+        profile: {
+          create: {},
+        },
+      },
+    });
+  }
+
+  const tokens = await issueTokens(user.id, user.email);
+  return { user: mapUser(user), tokens };
+}
+

@@ -14,6 +14,13 @@ export const refreshBodySchema = z.object({
   refreshToken: z.string().min(10),
 });
 
+export const socialLoginBodySchema = z.object({
+  idToken: z.string().min(1),
+  nonce: z.string().optional(),
+});
+
 export type RegisterBody = z.infer<typeof registerBodySchema>;
 export type LoginBody = z.infer<typeof loginBodySchema>;
 export type RefreshBody = z.infer<typeof refreshBodySchema>;
+export type SocialLoginBody = z.infer<typeof socialLoginBodySchema>;
+

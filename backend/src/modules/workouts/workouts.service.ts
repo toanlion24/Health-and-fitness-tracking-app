@@ -30,13 +30,77 @@ import type {
 export async function listExercises(
   query: ListExercisesQuery,
 ): Promise<ExerciseDto[]> {
+  const q = query.q?.trim() || "";
+  const muscle = query.muscleGroup?.trim() || "";
   const take = query.limit ?? 100;
   const skip = query.offset ?? 0;
+
+  // If database only has default seeded exercises, or if there's a search keyword, fetch from wger API
+  const dbCount = await prisma.exerciseCatalog.count();
+  if (dbCount <= 5 || q.length >= 2) {
+    try {
+      const url = new URL("https://wger.de/api/v2/exerciseinfo/");
+      url.searchParams.append("language", "2"); // English
+      url.searchParams.append("limit", "150");
+
+      const response = await fetch(url.toString(), {
+        headers: { "Accept": "application/json" },
+      });
+
+      if (response.ok) {
+        const jsonResponse = await response.json();
+        const externalExercises = jsonResponse.results || [];
+
+        if (Array.isArray(externalExercises) && externalExercises.length > 0) {
+          // Map wger category to MET
+          const typeToMet: Record<string, number> = {
+            cardio: 7.5,
+            strength: 5.0,
+            stretching: 2.3,
+            plyometrics: 8.0,
+            powerlifting: 6.0,
+            strongman: 6.0,
+            olympic_weightlifting: 6.0,
+          };
+
+          for (const ex of externalExercises) {
+            const exName = ex.translations?.[0]?.name || ex.name;
+            const exMuscle = ex.category?.name || "Unknown";
+            const exEquipment = ex.equipment?.map((e: any) => e.name).join(", ") || "none";
+            const exType = exMuscle.toLowerCase();
+
+            if (!exName) continue;
+
+            const existing = await prisma.exerciseCatalog.findFirst({
+              where: { name: exName }
+            });
+
+            if (!existing) {
+              await prisma.exerciseCatalog.create({
+                data: {
+                  name: exName,
+                  muscleGroup: exMuscle,
+                  equipment: exEquipment,
+                  met: new Decimal((typeToMet[exType] || 5.0).toString()),
+                }
+              });
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Wger Workouts Error:", error);
+    }
+  }
+
   const rows = await prisma.exerciseCatalog.findMany({
-    where: query.muscleGroup
-      ? { muscleGroup: { contains: query.muscleGroup } }
-      : undefined,
-    orderBy: { id: "asc" },
+    where: {
+      AND: [
+        q ? { name: { contains: q } } : {},
+        muscle ? { muscleGroup: { contains: muscle } } : {},
+      ]
+    },
+    orderBy: { name: "asc" },
     take,
     skip,
   });

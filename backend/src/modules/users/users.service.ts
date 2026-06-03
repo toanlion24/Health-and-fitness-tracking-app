@@ -39,6 +39,7 @@ export async function updateProfile(
     activityLevel?: string | null;
     timezone?: string | null;
     locale?: string | null;
+    avatarUrl?: string | null;
   } = {};
 
   if (body.fullName !== undefined) {
@@ -63,6 +64,9 @@ export async function updateProfile(
   if (body.locale !== undefined) {
     data.locale = body.locale;
   }
+  if (body.avatarUrl !== undefined) {
+    data.avatarUrl = body.avatarUrl;
+  }
 
   if (Object.keys(data).length === 0) {
     return getMe(userId);
@@ -79,6 +83,7 @@ export async function updateProfile(
       activityLevel: data.activityLevel ?? null,
       timezone: data.timezone ?? null,
       locale: data.locale ?? null,
+      avatarUrl: data.avatarUrl ?? null,
     },
     update: data,
   });

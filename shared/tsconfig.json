@@ -9,6 +9,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "skipLibCheck": true,
+    "types": [],
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },

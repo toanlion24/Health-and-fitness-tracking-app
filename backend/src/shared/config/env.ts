@@ -9,6 +9,9 @@ const envSchema = z.object({
   ACCESS_TOKEN_TTL_SEC: z.coerce.number().int().positive().default(900),
   REFRESH_TOKEN_TTL_SEC: z.coerce.number().int().positive().default(604800),
   BCRYPT_ROUNDS: z.coerce.number().int().min(10).max(14).default(12),
+  NUTRITION_API_URL: z.string().url().default("https://world.openfoodfacts.org/api/v2/search"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  APPLE_CLIENT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -3,6 +3,7 @@ import { ApiErrorCodes } from "@health-fitness/shared";
 import type { FoodDto, MealLogDto } from "@health-fitness/shared";
 import { prisma } from "../../shared/db/prisma.js";
 import { AppError } from "../../shared/errors/app-error.js";
+import { loadEnv } from "../../shared/config/env.js";
 import { serializeFood, serializeMeal } from "./nutrition.serializer.js";
 import type {
   AddMealLogItemBody,
@@ -23,21 +24,115 @@ export async function listFoods(
   userId: number,
   query: ListFoodsQuery,
 ): Promise<FoodDto[]> {
+  const q = query.q?.trim() || "";
   const take = query.limit ?? 50;
+
+  // 1. Tìm kiếm trong cơ sở dữ liệu local trước để phản hồi ngay lập tức (Instant DB Search)
   const where: {
     OR: Array<{ userId: null } | { userId: number }>;
     name?: { contains: string };
   } = {
     OR: [{ userId: null }, { userId }],
   };
-  if (query.q && query.q.trim().length > 0) {
-    where.name = { contains: query.q.trim() };
+  if (q) {
+    where.name = { contains: q };
   }
-  const rows = await prisma.foodCatalog.findMany({
+
+  let rows = await prisma.foodCatalog.findMany({
     where,
     orderBy: { name: "asc" },
     take,
   });
+
+  // 2. Nếu có từ khóa và số lượng kết quả local ít (< 5 món), gọi API bên ngoài để cập nhật thêm
+  if (q.length > 0 && rows.length < 5) {
+    try {
+      const headers = {
+        "User-Agent": "StudentHealthTrackingApp/1.0 (pogasdace2005@gmail.com)",
+        "Accept": "application/json",
+      };
+
+      // Thêm độ trễ nhỏ để tránh rate limit
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      const env = loadEnv();
+      const apiBaseUrl = env.NUTRITION_API_URL;
+
+      // Xây dựng URL động
+      const primaryUrlObj = new URL(apiBaseUrl);
+      primaryUrlObj.searchParams.set("q", q);
+      if (apiBaseUrl.includes("openfoodfacts")) {
+        primaryUrlObj.searchParams.set("fields", "product_name,nutriments");
+        primaryUrlObj.searchParams.set("page_size", "10");
+      }
+      const primaryUrl = primaryUrlObj.toString();
+
+      // Sử dụng timeout ngắn (2.5 giây) để không chặn trải nghiệm người dùng
+      const response = await fetch(primaryUrl, {
+        headers,
+        signal: AbortSignal.timeout(2500)
+      });
+
+      if (response.ok) {
+        const data = (await response.json()) as {
+          products?: Array<{
+            product_name?: string;
+            nutriments?: {
+              "energy-kcal_100g"?: number;
+              proteins_100g?: number;
+              protein_100g?: number;
+              carbohydrates_100g?: number;
+              fat_100g?: number;
+            };
+          }>;
+        };
+
+        const products = data.products || [];
+        let addedNew = false;
+
+        for (const prod of products) {
+          const name = prod.product_name || "Unknown Product";
+          // Kiểm tra xem đã có trong catalog chưa
+          const existing = await prisma.foodCatalog.findFirst({
+            where: {
+              name: {
+                equals: name,
+              },
+            },
+          });
+
+          if (!existing) {
+            await prisma.foodCatalog.create({
+              data: {
+                name,
+                kcalPerServing: Math.round(prod.nutriments?.["energy-kcal_100g"] ?? 0),
+                proteinG: new Decimal((prod.nutriments?.proteins_100g ?? prod.nutriments?.protein_100g ?? 0).toFixed(2)),
+                carbG: new Decimal((prod.nutriments?.carbohydrates_100g ?? 0).toFixed(2)),
+                fatG: new Decimal((prod.nutriments?.fat_100g ?? 0).toFixed(2)),
+                servingUnit: "100g",
+                userId: null,
+              },
+            });
+            addedNew = true;
+          }
+        }
+
+        // Nếu có thêm món ăn mới từ API, lấy lại danh sách từ DB để cập nhật đầy đủ nhất
+        if (addedNew) {
+          rows = await prisma.foodCatalog.findMany({
+            where,
+            orderBy: { name: "asc" },
+            take,
+          });
+        }
+      } else {
+        console.warn(`Nutrition API [${apiBaseUrl}] returned status ${response.status}: ${response.statusText}`);
+      }
+    } catch (error: any) {
+      console.warn(`Nutrition API connection skipped or failed: ${error?.message || error}`);
+    }
+  }
+
   return rows.map(serializeFood);
 }
 
@@ -165,6 +260,7 @@ export async function addMealLogItem(
 
   let foodId: number | null = null;
   let customFoodName: string | null = null;
+  let unit: string | null = null;
   let kcal: number;
   let proteinG: Decimal;
   let carbG: Decimal;
@@ -181,6 +277,8 @@ export async function addMealLogItem(
       throw new AppError(404, ApiErrorCodes.NOT_FOUND, "Food not found");
     }
     foodId = food.id;
+    customFoodName = food.name;
+    unit = food.servingUnit;
     const scaled = scaleMacros(
       food.kcalPerServing,
       food.proteinG,
@@ -194,6 +292,7 @@ export async function addMealLogItem(
     fatG = scaled.fatG;
   } else {
     customFoodName = body.customFoodName ?? null;
+    unit = body.unit ?? null;
     kcal = body.kcal ?? 0;
     proteinG = new Decimal((body.proteinG ?? 0).toString());
     carbG = new Decimal((body.carbG ?? 0).toString());
@@ -206,7 +305,7 @@ export async function addMealLogItem(
       foodId,
       customFoodName,
       quantity: new Decimal(body.quantity.toString()),
-      unit: body.unit ?? null,
+      unit: body.unit ?? unit,
       kcal,
       proteinG,
       carbG,

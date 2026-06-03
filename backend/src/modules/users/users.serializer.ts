@@ -14,6 +14,7 @@ export function serializeProfile(row: ProfileRow): UserProfileDto {
     activityLevel: row.activityLevel,
     timezone: row.timezone,
     locale: row.locale,
+    avatarUrl: row.avatarUrl,
   };
 }
 

@@ -1,8 +1,9 @@
 {
   "expo": {
     "name": "mobile",
-    "slug": "mobile",
+    "slug": "health-app",
     "version": "1.0.0",
+    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -21,20 +22,51 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "android.permission.ACTIVITY_RECOGNITION",
+        "android.permission.health.READ_STEPS"
+      ],
+      "package": "com.deckomizun2k5.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-secure-store",
+      "expo-font",
+      "expo-localization",
       [
-        "expo-notifications",
+        "expo-sensors",
         {
-          "color": "#f97316"
+          "motionPermission": "Allow this app to access your motion data to count steps."
         }
       ],
-      "expo-font"
-    ]
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 26,
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
+      [
+        "react-native-health-connect",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "minSdkVersion": 26
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "539685b0-16e7-424f-a36e-58cf25e2cbc4"
+      }
+    },
+    "owner": "deckomizun2k5"
   }
 }

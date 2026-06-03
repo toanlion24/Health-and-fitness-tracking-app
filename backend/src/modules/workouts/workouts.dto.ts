@@ -22,6 +22,7 @@ export const patchWorkoutPlanBodySchema = z.object({
 });
 
 export const listExercisesQuerySchema = z.object({
+  q: z.string().max(128).optional(),
   muscleGroup: z.string().max(128).optional(),
   limit: z.coerce.number().int().min(1).max(200).optional(),
   offset: z.coerce.number().int().min(0).max(10_000).optional(),
