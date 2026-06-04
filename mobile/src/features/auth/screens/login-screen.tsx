@@ -1,6 +1,6 @@
 import type { ReactElement } from "react";
 import { useCallback, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import type { AuthStackScreenProps } from "../../../core/navigation/auth-types";
 import { AuthHero } from "../components/auth-fields";
 import { InputField } from "../components/input-field";
@@ -11,6 +11,7 @@ import { DEMO_ACCOUNT, matchesDemoAccount } from "../lib/demo-account";
 import { colors, layout, space, touch } from "../theme/tokens";
 import { font } from "../theme/fonts";
 import { useAuthStore } from "../../../core/store/auth-store";
+import { ApiError } from "../../../core/lib/api";
 
 type FieldErrors = {
   email?: string;
@@ -22,6 +23,69 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<"Login">): Reac
   const [password, setPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const onGooglePress = useCallback(() => {
+    Alert.alert(
+      "Google Sign-In",
+      "Allow Health Fitness to access your Google account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Allow",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await useAuthStore.getState().loginWithGoogle("mock-google-token-12345");
+              const needsOnboarding = useAuthStore.getState().needsOnboarding;
+              if (needsOnboarding) {
+                navigation.replace("OnboardingGender");
+              } else {
+                navigation.replace("MainTabs");
+              }
+            } catch (err: any) {
+              console.error("Google login failed:", err);
+              setToastMessage("Không thể kết nối máy chủ, vui lòng thử lại");
+              setTimeout(() => setToastMessage(null), 3500);
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  }, [navigation]);
+
+  const onApplePress = useCallback(() => {
+    Alert.alert(
+      "Apple Sign-In",
+      "Allow Health Fitness to access your Apple account?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Allow",
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await useAuthStore.getState().loginWithApple("mock-apple-token-12345");
+              const needsOnboarding = useAuthStore.getState().needsOnboarding;
+              if (needsOnboarding) {
+                navigation.replace("OnboardingGender");
+              } else {
+                navigation.replace("MainTabs");
+              }
+            } catch (err: any) {
+              console.error("Apple login failed:", err);
+              setToastMessage("Không thể kết nối máy chủ, vui lòng thử lại");
+              setTimeout(() => setToastMessage(null), 3500);
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  }, [navigation]);
 
   const clearError = useCallback((key: keyof FieldErrors) => {
     setFieldErrors((prev) => {
@@ -54,6 +118,11 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<"Login">): Reac
     const trimmed = email.trim();
     if (!trimmed) {
       next.email = "Enter your email address.";
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(trimmed)) {
+        next.email = "Enter a valid email address.";
+      }
     }
     if (!password) {
       next.password = "Enter your password.";
@@ -77,7 +146,22 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<"Login">): Reac
         console.log("Fallback to demo login");
         navigation.replace("OnboardingGender");
       } else {
-        setFieldErrors({ password: err.message || "Email or password is incorrect." });
+        if ((err instanceof ApiError || err.name === "ApiError") && err.details?.fieldErrors) {
+          const errors: FieldErrors = {};
+          if (err.details.fieldErrors.email) {
+            errors.email = Array.isArray(err.details.fieldErrors.email)
+              ? err.details.fieldErrors.email.join(" ")
+              : String(err.details.fieldErrors.email);
+          }
+          if (err.details.fieldErrors.password) {
+            errors.password = Array.isArray(err.details.fieldErrors.password)
+              ? err.details.fieldErrors.password.join(" ")
+              : String(err.details.fieldErrors.password);
+          }
+          setFieldErrors(errors);
+        } else {
+          setFieldErrors({ password: err.message || "Email or password is incorrect." });
+        }
       }
     } finally {
       setIsLoading(false);
@@ -141,7 +225,7 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<"Login">): Reac
           testID="login-submit"
         />
         <OrDivider />
-        <SocialRow />
+         <SocialRow onGoogle={onGooglePress} onApple={onApplePress} />
         <View style={styles.footerRow}>
           <Text style={styles.footerMuted}>New here?</Text>
           <Pressable
@@ -154,6 +238,11 @@ export function LoginScreen({ navigation }: AuthStackScreenProps<"Login">): Reac
           </Pressable>
         </View>
       </View>
+      {toastMessage && (
+        <View style={styles.toastContainer}>
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </View>
+      )}
     </OnboardingLayout>
   );
 }
@@ -218,5 +307,29 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: colors.emerald600,
+  },
+  toastContainer: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: colors.slate900,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 9999,
+    shadowColor: colors.slate900,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  toastText: {
+    fontFamily: font.semibold,
+    fontSize: 14,
+    color: colors.white,
+    textAlign: "center",
   },
 });

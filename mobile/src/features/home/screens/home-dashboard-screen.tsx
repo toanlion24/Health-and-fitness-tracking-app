@@ -61,7 +61,7 @@ export function HomeDashboardScreen({ navigation }: HomeDashboardCompositeProps)
   const activeWorkoutMins = todayItem ? todayItem.totalWorkoutMinutes : 0;
 
   // Fetch real-time steps from Health Connect or hardware sensor
-  const { steps: stepsVal } = useStepTracker();
+  const { steps: stepsVal } = useStepTracker(user?.id);
 
   // Format step count for display
   const stepsString = stepsVal > 999 ? `${(stepsVal / 1000).toFixed(1)}k` : String(stepsVal);

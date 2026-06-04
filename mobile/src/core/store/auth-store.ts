@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import * as SecureStore from 'expo-secure-store';
-import { fetchApi } from "../lib/api";
+import { fetchApi, ApiError } from "../lib/api";
 
 export type UserProfile = {
   fullName: string | null;
@@ -70,7 +70,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.message || 'Lỗi đăng ký');
+      throw new ApiError(err.message || 'Lỗi đăng ký', err.code, err.details);
     }
     
     const data = await res.json();
@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.message || 'Lỗi đăng nhập');
+      throw new ApiError(err.message || 'Lỗi đăng nhập', err.code, err.details);
     }
     
     const data = await res.json();

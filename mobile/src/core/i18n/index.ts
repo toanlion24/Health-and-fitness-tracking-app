@@ -8,8 +8,12 @@ import vi from "./locales/vi.json";
 export type AppLocale = "en" | "vi";
 
 export function getDeviceLocale(): AppLocale {
-  const code = Localization.getLocales()[0]?.languageCode;
-  return code === "vi" ? "vi" : "en";
+  try {
+    const code = Localization.getLocales()[0]?.languageCode;
+    return code === "vi" ? "vi" : "en";
+  } catch {
+    return "en";
+  }
 }
 
 void i18n.use(initReactI18next).init({

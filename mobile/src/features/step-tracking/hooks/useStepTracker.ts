@@ -1,14 +1,15 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { Platform, PermissionsAndroid } from "react-native";
+import { Platform, PermissionsAndroid, NativeModules, AppState } from "react-native";
 import { Pedometer } from "expo-sensors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Health Connect imports — will only work in custom dev builds, not Expo Go
 let HealthConnect: typeof import("react-native-health-connect") | null = null;
 try {
-  // TEMPORARILY DISABLED TO PREVENT APK CRASH
-  // HealthConnect = require("react-native-health-connect");
-  HealthConnect = null;
+  const hasNativeModule = NativeModules && (NativeModules.HealthConnect || NativeModules.RNHealthConnect);
+  if (Platform.OS === "android" && hasNativeModule) {
+    HealthConnect = require("react-native-health-connect");
+  }
 } catch {
   // react-native-health-connect not available (e.g. running in Expo Go)
   HealthConnect = null;
@@ -243,7 +244,13 @@ async function getStepsFromPedometer(
   }
 }
 
-async function getHistoryFromPedometer(): Promise<HistoryItem[]> {
+const getIsTrackingKey = (userId?: number) =>
+  userId ? `@step_tracker_is_tracking_${userId}` : "@step_tracker_is_tracking";
+
+const getPedometerStepsKey = (dateStr: string, userId?: number) =>
+  userId ? `pedometer_steps_${userId}_${dateStr}` : `pedometer_steps_${dateStr}`;
+
+async function getHistoryFromPedometer(userId?: number): Promise<HistoryItem[]> {
   const items: HistoryItem[] = [];
   const today = new Date();
 
@@ -254,18 +261,30 @@ async function getHistoryFromPedometer(): Promise<HistoryItem[]> {
     const dateStr = dStart.toISOString().split("T")[0];
 
     let steps = 0;
+    let success = false;
     try {
-      const savedStr = await AsyncStorage.getItem(`pedometer_steps_${dateStr}`);
-      if (savedStr) {
-        steps = parseInt(savedStr, 10);
-      } else {
-        const dEnd = new Date(today);
-        dEnd.setDate(today.getDate() - i);
-        dEnd.setHours(23, 59, 59, 999);
-        steps = await getStepsFromPedometer(dStart, dEnd);
+      const dEnd = new Date(today);
+      dEnd.setDate(today.getDate() - i);
+      dEnd.setHours(23, 59, 59, 999);
+      const systemSteps = await getStepsFromPedometer(dStart, dEnd);
+      if (systemSteps > 0) {
+        steps = systemSteps;
+        success = true;
+        await AsyncStorage.setItem(getPedometerStepsKey(dateStr, userId), steps.toString());
       }
     } catch {
-      steps = 0;
+      // ignore
+    }
+
+    if (!success) {
+      try {
+        const savedStr = await AsyncStorage.getItem(getPedometerStepsKey(dateStr, userId));
+        if (savedStr) {
+          steps = parseInt(savedStr, 10);
+        }
+      } catch {
+        steps = 0;
+      }
     }
 
     items.push({
@@ -279,7 +298,10 @@ async function getHistoryFromPedometer(): Promise<HistoryItem[]> {
 
 // ─── Main Hook ───────────────────────────────────────────────────────────────
 
-export function useStepTracker(): StepTrackerData {
+const IS_TRACKING_KEY = "@step_tracker_is_tracking";
+
+export function useStepTracker(userId?: number): StepTrackerData {
+
   const [steps, setSteps] = useState(0);
   const [isAvailable, setIsAvailable] = useState(false);
   const [permissionGranted, setPermissionGranted] = useState(false);
@@ -305,7 +327,8 @@ export function useStepTracker(): StepTrackerData {
       healthConnectPollingRef.current = null;
     }
     setIsTracking(false);
-  }, []);
+    AsyncStorage.setItem(getIsTrackingKey(userId), "false").catch(() => {});
+  }, [userId]);
 
   const startLiveHealthConnect = useCallback(() => {
     // Health Connect doesn't have a real-time listener like Pedometer.
@@ -328,7 +351,8 @@ export function useStepTracker(): StepTrackerData {
     // Then poll every 30 seconds
     healthConnectPollingRef.current = setInterval(pollSteps, 30000);
     setIsTracking(true);
-  }, []);
+    AsyncStorage.setItem(getIsTrackingKey(userId), "true").catch(() => {});
+  }, [userId]);
 
   const startLivePedometer = useCallback(() => {
     if (pedometerSub.current) {
@@ -341,10 +365,11 @@ export function useStepTracker(): StepTrackerData {
       currentStepsRef.current = newTotal;
       
       const todayIso = new Date().toISOString().split('T')[0];
-      AsyncStorage.setItem(`pedometer_steps_${todayIso}`, newTotal.toString()).catch(() => {});
+      AsyncStorage.setItem(getPedometerStepsKey(todayIso, userId), newTotal.toString()).catch(() => {});
     });
     setIsTracking(true);
-  }, []);
+    AsyncStorage.setItem(getIsTrackingKey(userId), "true").catch(() => {});
+  }, [userId]);
 
   const startTracking = useCallback(() => {
     if (sourceRef.current === "health-connect") {
@@ -354,11 +379,22 @@ export function useStepTracker(): StepTrackerData {
     }
   }, [startLiveHealthConnect, startLivePedometer]);
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
+  const refresh = useCallback(async (silent = false) => {
+    if (!silent) {
+      setLoading(true);
+    }
     stopTracking();
 
     try {
+      // Load saved tracking preference
+      let trackingPref = true;
+      try {
+        const savedPref = await AsyncStorage.getItem(getIsTrackingKey(userId));
+        if (savedPref !== null) {
+          trackingPref = savedPref === "true";
+        }
+      } catch {}
+
       // ── Layer 1: Try Health Connect first ──
       const hc = await tryHealthConnect();
 
@@ -380,8 +416,14 @@ export function useStepTracker(): StepTrackerData {
         setHistory(hist);
 
         // Start live polling
-        startLiveHealthConnect();
-        setLoading(false);
+        if (trackingPref) {
+          startLiveHealthConnect();
+        } else {
+          setIsTracking(false);
+        }
+        if (!silent) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -397,19 +439,32 @@ export function useStepTracker(): StepTrackerData {
         // Get today's steps
         const todayIso = new Date().toISOString().split("T")[0];
         let todaySteps = 0;
+        let success = false;
         
         try {
-          const savedStr = await AsyncStorage.getItem(`pedometer_steps_${todayIso}`);
-          if (savedStr) {
-            todaySteps = parseInt(savedStr, 10);
-          } else {
-            const startOfDay = new Date();
-            startOfDay.setHours(0, 0, 0, 0);
-            const now = new Date();
-            todaySteps = await getStepsFromPedometer(startOfDay, now);
+          const startOfDay = new Date();
+          startOfDay.setHours(0, 0, 0, 0);
+          const now = new Date();
+          const systemSteps = await getStepsFromPedometer(startOfDay, now);
+          
+          if (systemSteps > 0) {
+            todaySteps = systemSteps;
+            success = true;
+            await AsyncStorage.setItem(getPedometerStepsKey(todayIso, userId), todaySteps.toString());
           }
-        } catch {
-          todaySteps = 0;
+        } catch (err) {
+          console.warn("Failed to get step count from system pedometer:", err);
+        }
+
+        if (!success) {
+          try {
+            const savedStr = await AsyncStorage.getItem(getPedometerStepsKey(todayIso, userId));
+            if (savedStr) {
+              todaySteps = parseInt(savedStr, 10);
+            }
+          } catch {
+            todaySteps = 0;
+          }
         }
 
         baseStepsRef.current = todaySteps;
@@ -417,12 +472,18 @@ export function useStepTracker(): StepTrackerData {
         setSteps(todaySteps);
 
         // Get history
-        const hist = await getHistoryFromPedometer();
+        const hist = await getHistoryFromPedometer(userId);
         setHistory(hist);
 
         // Start live listener
-        startLivePedometer();
-        setLoading(false);
+        if (trackingPref) {
+          startLivePedometer();
+        } else {
+          setIsTracking(false);
+        }
+        if (!silent) {
+          setLoading(false);
+        }
         return;
       }
 
@@ -442,16 +503,22 @@ export function useStepTracker(): StepTrackerData {
     } finally {
       setLoading(false);
     }
-  }, [stopTracking, startLiveHealthConnect, startLivePedometer]);
+  }, [userId, stopTracking, startLiveHealthConnect, startLivePedometer]);
 
   useEffect(() => {
     void refresh();
 
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (nextAppState === "active") {
+        void refresh(true); // Silent refresh when app comes to foreground
+      }
+    });
+
     return () => {
       stopTracking();
+      subscription.remove();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [userId, refresh, stopTracking]);
 
   return {
     steps,

@@ -218,8 +218,8 @@ export const useNutritionApiStore = create<NutritionState>((set, get) => ({
 
   setGoalKcal: (goalKcal) => set({ goalKcal }),
   bumpWater: (deltaL) => {
-    const { waterL, waterGoalL } = get();
-    const next = Math.min(waterGoalL + 0.5, Math.max(0, waterL + deltaL));
+    const { waterL } = get();
+    const next = Math.max(0, waterL + deltaL);
     set({ waterL: Math.round(next * 10) / 10 });
   },
 }));

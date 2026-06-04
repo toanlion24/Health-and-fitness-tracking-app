@@ -3,7 +3,6 @@
     "name": "mobile",
     "slug": "health-app",
     "version": "1.0.0",
-    "newArchEnabled": false,
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -22,7 +21,6 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "usesCleartextTraffic": true,
       "permissions": [
         "android.permission.ACTIVITY_RECOGNITION",
         "android.permission.health.READ_STEPS"

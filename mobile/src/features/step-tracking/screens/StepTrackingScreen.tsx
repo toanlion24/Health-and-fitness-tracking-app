@@ -11,6 +11,7 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useStepTracker } from "../hooks/useStepTracker";
+import { useAuthStore } from "../../../core/store/auth-store";
 import { OnboardingLayout } from "../../auth/components/onboarding-layout";
 import { colors, iosCardShadow, radii, touch } from "../../auth/theme/tokens";
 import { font } from "../../auth/theme/fonts";
@@ -19,6 +20,7 @@ const GOAL_STORAGE_KEY = "@step_tracker_goal";
 const DEFAULT_GOAL = 10000;
 
 export function StepTrackingScreen({ navigation }: { navigation: any }) {
+  const user = useAuthStore((s) => s.user);
   const {
     steps,
     loading,
@@ -28,7 +30,7 @@ export function StepTrackingScreen({ navigation }: { navigation: any }) {
     isTracking,
     startTracking,
     stopTracking,
-  } = useStepTracker();
+  } = useStepTracker(user?.id);
 
   const [goal, setGoal] = useState(DEFAULT_GOAL);
 

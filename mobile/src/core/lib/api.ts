@@ -1,5 +1,19 @@
 import * as SecureStore from 'expo-secure-store';
 
+export class ApiError {
+  name: string;
+  message: string;
+  code?: string;
+  details?: any;
+
+  constructor(message: string, code?: string, details?: any) {
+    this.name = 'ApiError';
+    this.message = message;
+    this.code = code;
+    this.details = details;
+  }
+}
+
 // Tự động phát hiện URL máy chủ API tùy theo môi trường chạy
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {

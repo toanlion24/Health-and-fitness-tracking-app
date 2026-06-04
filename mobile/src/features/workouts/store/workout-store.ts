@@ -62,9 +62,10 @@ export const useWorkoutStore = create<WorkoutState>((set, get) => ({
       if (muscle.trim()) params.append("muscleGroup", muscle.trim());
       const res = await fetchApi(`/exercises?${params.toString()}`);
       if (res.ok) {
-        const data = (await res.json()) as ExerciseItem[];
-        if (data && data.length > 0) {
-          set({ exercises: data, loadingExercises: false });
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data?.items ?? []);
+        if (items && items.length > 0) {
+          set({ exercises: items, loadingExercises: false });
           return;
         }
       }

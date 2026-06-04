@@ -1,8 +1,8 @@
 import { useFocusEffect } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import type { ReactElement } from "react";
-import { useEffect, useCallback } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useEffect, useCallback, useRef } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { OnboardingLayout } from "../../auth/components/onboarding-layout";
 import { colors, iosCardShadow, radii, touch } from "../../auth/theme/tokens";
@@ -28,6 +28,19 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
   const bumpWater = useNutritionApiStore((s) => s.bumpWater);
   const fetchTodayLogs = useNutritionApiStore((s) => s.fetchTodayLogs);
   const createMealLog = useNutritionApiStore((s) => s.createMealLog);
+
+  const clickTimestampsRef = useRef<number[]>([]);
+
+  const handleBumpWater = useCallback((deltaL: number) => {
+    const now = Date.now();
+    clickTimestampsRef.current = clickTimestampsRef.current.filter((t) => now - t < 5000);
+    if (clickTimestampsRef.current.length >= 50) {
+      Alert.alert("Thông báo", "Bạn thao tác quá nhanh");
+      return;
+    }
+    clickTimestampsRef.current.push(now);
+    bumpWater(deltaL);
+  }, [bumpWater]);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,26 +153,16 @@ export function NutritionDashboardScreen({ navigation }: NutritionStackScreenPro
                 </View>
               </View>
               <View style={{ marginTop: 16, flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 8 }}>
-                <Pressable onPress={() => bumpWater(-0.25)} accessibilityRole="button" accessibilityLabel="Remove water" style={({ pressed }) => [waterBtnMinus, pressed && { opacity: 0.85 }]}>
+                <Pressable onPress={() => handleBumpWater(-0.25)} accessibilityRole="button" accessibilityLabel="Remove water" style={({ pressed }) => [waterBtnMinus, pressed && { opacity: 0.85 }]}>
                   <MaterialCommunityIcons name="minus" size={22} color={colors.slate900} />
                 </Pressable>
-                <Pressable onPress={() => bumpWater(0.25)} accessibilityRole="button" accessibilityLabel="Add water" style={({ pressed }) => [waterBtnPlus, pressed && { opacity: 0.9 }]}>
+                <Pressable onPress={() => handleBumpWater(0.25)} accessibilityRole="button" accessibilityLabel="Add water" style={({ pressed }) => [waterBtnPlus, pressed && { opacity: 0.9 }]}>
                   <MaterialCommunityIcons name="plus" size={22} color={colors.white} />
                 </Pressable>
               </View>
             </View>
           </View>
         </ScrollView>
-
-        {/* FAB */}
-        <Pressable
-          onPress={() => navigation.navigate("AddFood")}
-          accessibilityRole="button"
-          accessibilityLabel="Log food"
-          style={[fabStyle, { bottom: fabBottom, right: 20 }]}
-        >
-          <MaterialCommunityIcons name="plus" size={28} color={colors.white} />
-        </Pressable>
       </View>
     </OnboardingLayout>
   );
