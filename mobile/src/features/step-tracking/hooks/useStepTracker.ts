@@ -4,16 +4,16 @@ import { Pedometer } from "expo-sensors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Health Connect imports — will only work in custom dev builds, not Expo Go
-let HealthConnect: typeof import("react-native-health-connect") | null = null;
-try {
-  const hasNativeModule = NativeModules && (NativeModules.HealthConnect || NativeModules.RNHealthConnect);
-  if (Platform.OS === "android" && hasNativeModule) {
-    HealthConnect = require("react-native-health-connect");
-  }
-} catch {
-  // react-native-health-connect not available (e.g. running in Expo Go)
-  HealthConnect = null;
-}
+let HealthConnect: any = null;
+// Temporarily disabled to prevent APK crash
+// try {
+//   const hasNativeModule = NativeModules && (NativeModules.HealthConnect || NativeModules.RNHealthConnect);
+//   if (Platform.OS === "android" && hasNativeModule) {
+//     HealthConnect = require("react-native-health-connect");
+//   }
+// } catch {
+//   HealthConnect = null;
+// }
 
 export type StepSource = "health-connect" | "pedometer" | "unavailable";
 
@@ -115,7 +115,7 @@ async function getStepsFromHealthConnect(
   if (!HealthConnect) return 0;
 
   try {
-    const result = await withTimeout(
+    const result = await withTimeout<any>(
       HealthConnect.readRecords("Steps", {
         timeRangeFilter: {
           operator: "between",

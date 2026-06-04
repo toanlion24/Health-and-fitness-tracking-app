@@ -49,6 +49,7 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
 
   const targetMeal: MealSlot = route.params.targetMeal ?? "lunch";
   const [qty, setQty] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const addFoodToMeal = useNutritionApiStore((s) => s.addFoodToMeal);
   const createMealLog = useNutritionApiStore((s) => s.createMealLog);
@@ -71,32 +72,38 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
   const totalKcal = Math.round(food.kcal * qty);
 
   const confirm = async (): Promise<void> => {
-    // Check if we have an existing log for today for this meal type
-    const existingLogs = mealLogs.filter((l) => l.mealType === targetMeal);
-    let mealLogId = existingLogs.length > 0 ? existingLogs[0]!.id : null;
-    
-    if (mealLogId == null) {
-      mealLogId = await createMealLog(targetMeal as any);
-    }
-    
-    if (mealLogId != null) {
-      if (foodItem) {
-        await addFoodToMeal(mealLogId, foodItem, qty);
-      } else {
-        const proteinNum = parseFloat(food.protein) || 0;
-        const carbNum = parseFloat(food.carbs) || 0;
-        const fatNum = parseFloat(food.fat) || 0;
-        await useNutritionApiStore.getState().addCustomFoodToMeal(
-          mealLogId,
-          food.name,
-          totalKcal,
-          proteinNum,
-          carbNum,
-          fatNum
-        );
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      // Check if we have an existing log for today for this meal type
+      const existingLogs = mealLogs.filter((l) => l.mealType === targetMeal);
+      let mealLogId = existingLogs.length > 0 ? existingLogs[0]!.id : null;
+      
+      if (mealLogId == null) {
+        mealLogId = await createMealLog(targetMeal as any);
       }
+      
+      if (mealLogId != null) {
+        if (foodItem) {
+          await addFoodToMeal(mealLogId, foodItem, qty);
+        } else {
+          const proteinNum = parseFloat(food.protein) || 0;
+          const carbNum = parseFloat(food.carbs) || 0;
+          const fatNum = parseFloat(food.fat) || 0;
+          await useNutritionApiStore.getState().addCustomFoodToMeal(
+            mealLogId,
+            food.name,
+            totalKcal,
+            proteinNum,
+            carbNum,
+            fatNum
+          );
+        }
+      }
+      navigation.popToTop();
+    } finally {
+      setIsSubmitting(false);
     }
-    navigation.popToTop();
   };
 
   return (
@@ -196,7 +203,11 @@ export function NutritionFoodDetailScreen({ navigation, route }: NutritionStackS
           borderTopColor: colors.slate200,
         }}
       >
-        <GradientPrimaryButton label={`Add to ${mealLabel(targetMeal)}`} onPress={confirm} />
+        <GradientPrimaryButton 
+          label={isSubmitting ? "Adding..." : `Add to ${mealLabel(targetMeal)}`} 
+          onPress={confirm} 
+          disabled={isSubmitting} 
+        />
       </View>
     </SafeAreaView>
   );
