@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Pre-push hook
+# Run before push to remote
+
+echo "Running pre-push checks..."
+
+# Run tests
+echo "Running tests..."
+npm run test
+if [ $? -ne 0 ]; then
+    echo "Tests failed. Please fix the failing tests before pushing."
+    exit 1
+fi
+
+echo "Pre-push checks passed!"
+exit 0

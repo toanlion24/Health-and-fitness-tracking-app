@@ -1,0 +1,39 @@
+#!/bin/sh
+
+# Pre-commit hook
+# Run before each commit
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m'
+
+echo "${YELLOW}Running pre-commit checks...${NC}"
+
+# Check staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$')
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "${GREEN}No TypeScript/JavaScript files staged.${NC}"
+    exit 0
+fi
+
+# Run lint on staged files
+echo "${YELLOW}Running lint...${NC}"
+npx eslint $STAGED_FILES --max-warnings 0 2>/dev/null
+if [ $? -ne 0 ]; then
+    echo "${RED}Linting failed. Please fix the errors above.${NC}"
+    exit 1
+fi
+
+# Run typecheck
+echo "${YELLOW}Running typecheck...${NC}"
+npx tsc --noEmit
+if [ $? -ne 0 ]; then
+    echo "${RED}Typecheck failed. Please fix the type errors.${NC}"
+    exit 1
+fi
+
+echo "${GREEN}Pre-commit checks passed!${NC}"
+exit 0

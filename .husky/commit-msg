@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Commit message hook
+# Validate commit messages
+
+commit_msg_file=$1
+commit_msg=$(cat "$commit_msg_file")
+
+# Colors
+RED='\033[0;31m'
+NC='\033[0m'
+
+# Conventional commits pattern
+pattern="^(feat|fix|docs|style|refactor|perf|test|chore|revert)(\(.+\))?: .{1,50}"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo "${RED}Invalid commit message format.${NC}"
+    echo "Please follow Conventional Commits format:"
+    echo "  feat: add new feature"
+    echo "  fix: resolve bug"
+    echo "  docs: update documentation"
+    echo "  style: format code"
+    echo "  refactor: restructure code"
+    echo "  test: add tests"
+    echo "  chore: maintenance tasks"
+    exit 1
+fi
+
+exit 0
