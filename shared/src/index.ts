@@ -236,10 +236,15 @@ export type ReminderDto = {
 };
 
 export type ChatMessageDto = {
-  id: string;
+  id: number;
   role: "user" | "assistant";
   content: string;
   createdAt: string;
+};
+
+export type SendChatMessageResult = {
+  userMessage: ChatMessageDto;
+  assistantMessage: ChatMessageDto;
 };
 
 export type ChatRequestDto = {

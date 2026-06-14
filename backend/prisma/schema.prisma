@@ -31,6 +31,11 @@ enum ReminderType {
   sleep
 }
 
+enum ChatRole {
+  user
+  assistant
+}
+
 model User {
   id           Int        @id @default(autoincrement())
   email        String     @unique @db.VarChar(255)
@@ -52,6 +57,7 @@ model User {
   dailyProgress   DailyProgress[]
   reminders       Reminder[]
   deviceTokens    DeviceToken[]
+  chatMessages    ChatMessage[]
 
   @@map("users")
 }
@@ -112,6 +118,19 @@ model DeviceToken {
 
   @@index([userId])
   @@map("device_tokens")
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  role      ChatRole
+  content   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("chat_messages")
 }
 
 model ExerciseCatalog {
