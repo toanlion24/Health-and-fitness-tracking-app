@@ -10,6 +10,7 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Logs
 logs/
@@ -20,6 +21,11 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Microsoft Office lock files (Word/Excel temp)
+~*
+# Allow real docs that start with ~ in name (none expected)
+!~*/
+
 # IDE
 .idea/
 .vscode/*
@@ -27,6 +33,7 @@ Thumbs.db
 .cursor/
 
 # Expo
+.expo/
 mobile/.expo/
 mobile/dist/
 mobile/web-build/
@@ -37,3 +44,7 @@ backend/prisma/*.db-journal
 
 # Test
 coverage/
+
+# Temporary generated reports (keep them locally, do not commit)
+docs/*.docx
+docs/*.docx~
