@@ -1,0 +1,50 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true,
+    "react-native": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@react-native",
+    "plugin:@typescript-eslint/recommended-type-checked",
+    "plugin:@typescript-eslint/stylistic",
+    "prettier"
+  ],
+  "ignorePatterns": [
+    "node_modules",
+    "dist",
+    "*.config.js"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "project": true,
+    "tsconfigRootDir": "."
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "@react-native",
+    "prettier"
+  ],
+  "rules": {
+    "@typescript-eslint/consistent-type-imports": [
+      "error",
+      {
+        "fixStyle": "inline-type-imports"
+      }
+    ],
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
+    "no-console": "warn",
+    "prettier/prettier": "error",
+    "@react-native/no-inline-styles": "warn"
+  },
+  "root": true
+}
