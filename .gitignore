@@ -41,6 +41,7 @@ mobile/web-build/
 # Prisma
 backend/prisma/*.db
 backend/prisma/*.db-journal
+backend/schema-temp.prisma
 
 # Test
 coverage/
